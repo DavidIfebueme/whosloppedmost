@@ -6,6 +6,8 @@ import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
 import RatSwarm from "@/components/RatSwarm";
+import RatCard from "@/components/RatCard";
+import Leaderboard from "@/components/Leaderboard";
 import RegisterPanel, { loadCustomRats } from "@/components/RegisterPanel";
 import StoryProps from "@/components/StoryProps";
 import { useRace } from "@/store/race";
@@ -91,14 +93,38 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
 }
 
 function OriginRebase({ world }: { readonly world: React.RefObject<THREE.Group | null> }) {
-  const { camera, controls } = useThree((s) => ({
-    camera: s.camera,
-    controls: s.controls as unknown as { target: THREE.Vector3 } | null,
-  }));
+  const camera = useThree((s) => s.camera);
+  const controls = useThree((s) =>
+    s.controls as unknown as {
+      target: THREE.Vector3;
+      update: () => void;
+    } | null,
+  );
+  const rats = useRace((s) => s.rats);
+  const selected = useRace((s) => s.selected);
+  const resetCounter = useRace((s) => s.resetCounter);
+  const seenReset = useRef(resetCounter);
+  const focus = useRef(new THREE.Vector3());
+
   useFrame(() => {
     const group = world.current;
     if (group === null || controls === null) {
       return;
+    }
+    if (seenReset.current !== resetCounter) {
+      seenReset.current = resetCounter;
+      camera.position.set(120, 90, 120);
+      controls.target.set(0, 0, 0);
+      controls.update();
+      return;
+    }
+    if (selected !== null) {
+      const rat = rats.find((r) => r.handle === selected);
+      if (rat !== undefined) {
+        const p = pointAt(rat.distance);
+        focus.current.set(p.x, 4, p.z);
+        controls.target.lerp(focus.current, 0.08);
+      }
     }
     const t = controls.target;
     if (Math.abs(t.x) > REBASE_THRESHOLD || Math.abs(t.z) > REBASE_THRESHOLD) {
@@ -142,6 +168,7 @@ export default function RaceScene() {
   const world = useRef<THREE.Group>(null);
   const rats = useRace((s) => s.rats);
   const setRats = useRace((s) => s.setRats);
+  const resetView = useRace((s) => s.resetView);
 
   useEffect(() => {
     let alive = true;
@@ -207,37 +234,35 @@ export default function RaceScene() {
           zoomSpeed={1.1}
         />
       </Canvas>
-      <div className="absolute left-4 top-4 flex max-h-[70vh] flex-col gap-3 overflow-y-auto text-xs text-white/70">
+      <div className="absolute left-4 top-4 max-h-[calc(100vh-2rem)] w-64 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-4 backdrop-blur-md">
+        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.3em] text-cheese">
+          join the race
+        </p>
         <RegisterPanel />
-        <div>
-          <p className="mb-2 uppercase tracking-[0.3em] text-white/40">
-            live rats {rats.length}
-          </p>
-          {rats
-            .filter((rat) => !rat.stale)
-            .slice(0, 8)
-            .map((rat) => (
-              <p key={rat.handle}>
-                {rat.handle} · {rat.mergedPrs}prs · lap{rat.laps}
-              </p>
-            ))}
-        </div>
-        {rats.some((rat) => rat.stale) && (
-          <div>
-            <p className="mb-2 uppercase tracking-[0.3em] text-white/40">
-              quarantine · unverified
-            </p>
-            {rats
-              .filter((rat) => rat.stale)
-              .slice(0, 8)
-              .map((rat) => (
-                <p key={rat.handle} className="text-white/40">
-                  {rat.handle} · farmed?
-                </p>
-              ))}
-          </div>
-        )}
+        <div className="my-3 border-t border-white/10" />
+        <Leaderboard />
       </div>
+      <div className="absolute right-4 top-4 flex gap-2">
+        <a
+          className="rounded-full border border-white/15 bg-black/60 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white/70 backdrop-blur-md transition-colors hover:border-cheese hover:text-cheese"
+          href="/"
+        >
+          ← home
+        </a>
+        <button
+          className="rounded-full border border-white/15 bg-black/60 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white/70 backdrop-blur-md transition-colors hover:border-cheese hover:text-cheese"
+          onClick={resetView}
+          type="button"
+        >
+          reset view
+        </button>
+      </div>
+      <div className="absolute bottom-4 right-4">
+        <RatCard />
+      </div>
+      <p className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
+        drag to orbit · scroll to zoom · click a rat
+      </p>
     </div>
   );
 }
