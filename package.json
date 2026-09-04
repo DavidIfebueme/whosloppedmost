@@ -16,12 +16,12 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@effect/platform": "^0.84.0",
+    "@effect/platform": "^0.97.1",
     "@effect/platform-node": "^0.108.1",
     "@react-three/drei": "^10.0.0",
     "@react-three/fiber": "^9.0.0",
     "@react-three/postprocessing": "^3.0.0",
-    "effect": "^3.13.0",
+    "effect": "^3.22.1",
     "next": "^15.1.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
