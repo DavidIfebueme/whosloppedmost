@@ -6,6 +6,7 @@ import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
 import RatSwarm from "@/components/RatSwarm";
+import StoryProps from "@/components/StoryProps";
 import { useRace } from "@/store/race";
 
 interface RatDatum {
@@ -188,6 +189,7 @@ export default function RaceScene() {
           </mesh>
           <TrackRibbon maxDistance={maxDistance} />
           <Barriers maxDistance={maxDistance} />
+          <StoryProps maxDistance={maxDistance} />
           <RatSwarm loopLength={maxDistance} />
           <Cheese />
         </group>
