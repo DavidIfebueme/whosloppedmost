@@ -1,19 +1,19 @@
-// draft seed handles, pending owner veto before launch.
+// seed handles, researched from ai-shipping twitter culture.
 // all are public github profiles, stats shown are public data only.
 export const SEED_HANDLES: ReadonlyArray<string> = [
   "steipete",
-  "sindresorhus",
-  "torvalds",
-  "yyx990803",
-  "gaearon",
-  "karpathy",
+  "poteto",
+  "rauchg",
   "shuding",
   "leerob",
-  "kentcdodds",
+  "t3dotgg",
+  "simonw",
+  "amasad",
+  "antonosika",
+  "mattpocock",
+  "steven-tey",
+  "karpathy",
   "addyosmani",
-  "wesbos",
-  "rauchg",
-  "timneutkens",
-  "mrdoob",
-  "developit",
+  "bcherny",
+  "mckaywrigley",
 ];
