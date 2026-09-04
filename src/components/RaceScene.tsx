@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
+import RatSwarm from "@/components/RatSwarm";
+import { useRace } from "@/store/race";
 
 interface RatDatum {
   readonly handle: string;
@@ -40,24 +42,49 @@ function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
-function RatMarkers({ rats }: { readonly rats: ReadonlyArray<RatDatum> }) {
+function Barriers({ maxDistance }: { readonly maxDistance: number }) {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const placements = useMemo(() => {
+    const list: Array<{ x: number; z: number; yaw: number }> = [];
+    for (let s = 0; s < maxDistance; s += 40) {
+      const p = pointAt(s);
+      const ahead = pointAt(Math.min(s + 2, maxDistance));
+      const dx = ahead.x - p.x;
+      const dz = ahead.z - p.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const nx = -dz / len;
+      const nz = dx / len;
+      const yaw = Math.atan2(dx, dz);
+      list.push({ x: p.x + nx * 5.5, z: p.z + nz * 5.5, yaw });
+      list.push({ x: p.x - nx * 5.5, z: p.z - nz * 5.5, yaw });
+    }
+    return list;
+  }, [maxDistance]);
+
+  useEffect(() => {
+    const m = mesh.current;
+    if (m === null) {
+      return;
+    }
+    const dummy = new THREE.Object3D();
+    placements.forEach((b, i) => {
+      dummy.position.set(b.x, 1.5, b.z);
+      dummy.rotation.set(0, b.yaw, 0);
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
+    });
+    m.instanceMatrix.needsUpdate = true;
+  }, [placements]);
+
   return (
-    <group>
-      {rats.map((rat) => {
-        const p = pointAt(rat.distance);
-        const color = rat.stale ? "#555566" : rat.laps > 0 ? "#ffd84d" : "#7dd3fc";
-        return (
-          <mesh key={rat.handle} position={[p.x, 3.5, p.z]}>
-            <sphereGeometry args={[1.6, 16, 16]} />
-            <meshStandardMaterial
-              color={color}
-              emissive={color}
-              emissiveIntensity={0.55}
-            />
-          </mesh>
-        );
-      })}
-    </group>
+    <instancedMesh
+      ref={mesh}
+      args={[undefined, undefined, Math.max(placements.length, 1)]}
+      frustumCulled={false}
+    >
+      <boxGeometry args={[0.6, 3, 8]} />
+      <meshStandardMaterial color="#3a3a4d" roughness={0.85} />
+    </instancedMesh>
   );
 }
 
@@ -94,21 +121,25 @@ function Cheese() {
     }
   });
   return (
-    <mesh ref={ref} position={[0, 42, 0]}>
-      <octahedronGeometry args={[7, 0]} />
-      <meshStandardMaterial
-        color="#ffd84d"
-        emissive="#ffd84d"
-        emissiveIntensity={0.9}
-        roughness={0.4}
-      />
-    </mesh>
+    <group>
+      <mesh ref={ref} position={[0, 42, 0]}>
+        <octahedronGeometry args={[7, 0]} />
+        <meshStandardMaterial
+          color="#ffd84d"
+          emissive="#ffd84d"
+          emissiveIntensity={0.9}
+          roughness={0.4}
+        />
+      </mesh>
+      <pointLight position={[0, 42, 0]} intensity={900} distance={600} color="#ffd84d" />
+    </group>
   );
 }
 
 export default function RaceScene() {
   const world = useRef<THREE.Group>(null);
-  const [rats, setRats] = useState<ReadonlyArray<RatDatum>>([]);
+  const rats = useRace((s) => s.rats);
+  const setRats = useRace((s) => s.setRats);
 
   useEffect(() => {
     let alive = true;
@@ -127,7 +158,7 @@ export default function RaceScene() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [setRats]);
 
   const maxDistance = useMemo(() => {
     let max = 0;
@@ -151,8 +182,13 @@ export default function RaceScene() {
         <hemisphereLight args={["#8aa0ff", "#0b0b12", 0.55]} />
         <directionalLight position={[80, 140, 40]} intensity={1.4} />
         <group ref={world}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+            <circleGeometry args={[3000, 48]} />
+            <meshStandardMaterial color="#0b0b14" roughness={1} />
+          </mesh>
           <TrackRibbon maxDistance={maxDistance} />
-          <RatMarkers rats={rats} />
+          <Barriers maxDistance={maxDistance} />
+          <RatSwarm loopLength={maxDistance} />
           <Cheese />
         </group>
         <OriginRebase world={world} />
