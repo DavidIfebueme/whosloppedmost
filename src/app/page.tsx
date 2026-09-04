@@ -11,12 +11,20 @@ export default function HomePage() {
         3d spiral plus live github scoring is on the way. first unit is the
         scaffold plus health check.
       </p>
-      <a
-        className="rounded-full border border-white/20 px-5 py-2 text-sm hover:border-cheese hover:text-cheese"
-        href="/api/health"
-      >
-        check health
-      </a>
+      <div className="flex gap-3">
+        <a
+          className="rounded-full bg-cheese px-5 py-2 text-sm font-semibold text-black hover:opacity-90"
+          href="/race"
+        >
+          enter the race
+        </a>
+        <a
+          className="rounded-full border border-white/20 px-5 py-2 text-sm hover:border-cheese hover:text-cheese"
+          href="/api/health"
+        >
+          check health
+        </a>
+      </div>
     </main>
   );
 }
