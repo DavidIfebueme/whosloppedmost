@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Effect, Schema } from "effect";
-import { fetchRat, RatsLayer, staleEntry, type RatEntry } from "@/lib/effect/rat-entry";
+import { fetchRatCached, RatsLayer, staleEntry, type RatEntry } from "@/lib/effect/rat-entry";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
   const handle = body.handle.trim().toLowerCase();
   const rat: RatEntry = await Effect.runPromise(
-    fetchRat(handle).pipe(
+    fetchRatCached(handle).pipe(
       Effect.provide(RatsLayer),
       Effect.catchAll(() => Effect.succeed(staleEntry(handle))),
     ),
