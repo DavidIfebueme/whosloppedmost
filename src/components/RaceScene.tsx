@@ -6,6 +6,7 @@ import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
 import RatSwarm from "@/components/RatSwarm";
+import RegisterPanel, { loadCustomRats } from "@/components/RegisterPanel";
 import StoryProps from "@/components/StoryProps";
 import { useRace } from "@/store/race";
 
@@ -148,7 +149,10 @@ export default function RaceScene() {
       .then((res) => res.json() as Promise<{ rats: ReadonlyArray<RatDatum> }>)
       .then((body) => {
         if (alive) {
-          setRats(body.rats);
+          const customs = loadCustomRats().filter(
+            (c) => !body.rats.some((r) => r.handle === c.handle),
+          );
+          setRats([...body.rats, ...customs]);
         }
       })
       .catch(() => {
@@ -203,16 +207,36 @@ export default function RaceScene() {
           zoomSpeed={1.1}
         />
       </Canvas>
-      <div className="pointer-events-none absolute left-4 top-4 max-h-[40vh] overflow-hidden text-xs text-white/70">
-        <p className="mb-2 uppercase tracking-[0.3em] text-white/40">
-          live rats {rats.length}
-        </p>
-        {rats.slice(0, 8).map((rat) => (
-          <p key={rat.handle}>
-            {rat.handle} · {rat.mergedPrs}prs · lap{rat.laps}
-            {rat.stale ? " · stale" : ""}
+      <div className="absolute left-4 top-4 flex max-h-[70vh] flex-col gap-3 overflow-y-auto text-xs text-white/70">
+        <RegisterPanel />
+        <div>
+          <p className="mb-2 uppercase tracking-[0.3em] text-white/40">
+            live rats {rats.length}
           </p>
-        ))}
+          {rats
+            .filter((rat) => !rat.stale)
+            .slice(0, 8)
+            .map((rat) => (
+              <p key={rat.handle}>
+                {rat.handle} · {rat.mergedPrs}prs · lap{rat.laps}
+              </p>
+            ))}
+        </div>
+        {rats.some((rat) => rat.stale) && (
+          <div>
+            <p className="mb-2 uppercase tracking-[0.3em] text-white/40">
+              quarantine · unverified
+            </p>
+            {rats
+              .filter((rat) => rat.stale)
+              .slice(0, 8)
+              .map((rat) => (
+                <p key={rat.handle} className="text-white/40">
+                  {rat.handle} · farmed?
+                </p>
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );
