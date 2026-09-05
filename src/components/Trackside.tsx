@@ -311,7 +311,7 @@ function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
   const data = useMemo(() => {
     const outerR = 20 + 2.5 * Math.sqrt((2 * maxDistance) / 2.5);
     const d = outerR + 52;
-    const yaw = Math.PI / 4;
+    const yaw = -Math.PI / 4;
     const stepGeos: Array<THREE.BufferGeometry> = [];
     const seats: Array<{ x: number; y: number; z: number }> = [];
     const rows = [
@@ -320,7 +320,7 @@ function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
       { off: 14, y: 5.6 },
     ];
     const toWorld = (lx: number, lz: number): [number, number] => [
-      -d + lx * Math.cos(yaw) + lz * Math.sin(yaw),
+      d + lx * Math.cos(yaw) + lz * Math.sin(yaw),
       -d - lx * Math.sin(yaw) + lz * Math.cos(yaw),
     ];
     for (const row of rows) {
@@ -335,6 +335,18 @@ function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
     wall.rotateY(yaw);
     wall.translate(wallX, 0.7, wallZ);
     stepGeos.push(wall);
+    // roof slab on poles
+    const roof = new THREE.BoxGeometry(26, 1, 134);
+    roof.rotateY(yaw);
+    const [roofX, roofZ] = toWorld(9, 0);
+    roof.translate(roofX, 13.5, roofZ);
+    stepGeos.push(roof);
+    for (const pz of [-60, -20, 20, 60]) {
+      const pole = new THREE.CylinderGeometry(0.4, 0.4, 8, 6);
+      const [px, pzz] = toWorld(16, pz);
+      pole.translate(px, 9.5, pzz);
+      stepGeos.push(pole);
+    }
     for (let z = -60; z <= 60; z += 3) {
       for (const row of rows) {
         const [wx, wz] = toWorld(row.off, z);
@@ -342,7 +354,7 @@ function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
       }
     }
     const steps = mergeGeometries(stepGeos) ?? new THREE.BoxGeometry(1, 1, 1);
-    return { steps, seats, yaw };
+    return { steps, seats };
   }, [maxDistance]);
 
   const crowdRef = useRef<THREE.InstancedMesh>(null);
@@ -365,7 +377,7 @@ function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
     const rand = mulberry32(99);
     data.seats.forEach((s, i) => {
       dummy.position.set(s.x, s.y, s.z);
-      dummy.rotation.set(0, Math.PI / 4, 0);
+      dummy.rotation.set(0, -Math.PI / 4, 0);
       dummy.scale.setScalar(0.85 + rand() * 0.3);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
