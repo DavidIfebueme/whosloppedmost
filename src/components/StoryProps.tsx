@@ -85,12 +85,37 @@ function Banners({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
+function drawJumbotron(
+  canvas: HTMLCanvasElement,
+  total: number,
+): void {
+  const ctx = canvas.getContext("2d");
+  if (ctx === null) {
+    return;
+  }
+  ctx.fillStyle = "#05050a";
+  ctx.fillRect(0, 0, 512, 256);
+  ctx.fillStyle = "#ffd84d";
+  ctx.font = "bold 30px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("TOTAL DISTANCE RUN", 256, 60);
+  ctx.fillStyle = "#f2f0e9";
+  ctx.font = "bold 64px monospace";
+  ctx.fillText(`${total * 137}m`, 256, 140);
+  ctx.fillStyle = "#555566";
+  ctx.font = "24px sans-serif";
+  ctx.fillText("DISTANCE FROM START: 0m", 256, 200);
+}
+
 function Jumbotron() {
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
     canvas.height = 256;
-    return new THREE.CanvasTexture(canvas);
+    drawJumbotron(canvas, 0);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
   }, []);
   const total = useRef(0);
   const last = useRef(0);
@@ -109,22 +134,7 @@ function Jumbotron() {
     }
     last.current = t;
     const canvas = texture.image as HTMLCanvasElement;
-    const ctx = canvas.getContext("2d");
-    if (ctx === null) {
-      return;
-    }
-    ctx.fillStyle = "#05050a";
-    ctx.fillRect(0, 0, 512, 256);
-    ctx.fillStyle = "#ffd84d";
-    ctx.font = "bold 30px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("TOTAL DISTANCE RUN", 256, 60);
-    ctx.fillStyle = "#f2f0e9";
-    ctx.font = "bold 64px monospace";
-    ctx.fillText(`${total.current * 137}m`, 256, 140);
-    ctx.fillStyle = "#555566";
-    ctx.font = "24px sans-serif";
-    ctx.fillText("DISTANCE FROM START: 0m", 256, 200);
+    drawJumbotron(canvas, total.current);
     texture.needsUpdate = true;
   });
 
@@ -136,7 +146,7 @@ function Jumbotron() {
       </mesh>
       <mesh position={[0, 32, 0]}>
         <boxGeometry args={[22, 12, 1]} />
-        <meshBasicMaterial map={texture} />
+        <meshBasicMaterial map={texture} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -199,7 +209,12 @@ function Crowd() {
         frustumCulled={false}
       >
         <capsuleGeometry args={[1.1, 1.6, 3, 6]} />
-        <meshStandardMaterial color="#3f3f55" roughness={0.95} />
+        <meshStandardMaterial
+          color="#4d4d63"
+          emissive="#14141f"
+          emissiveIntensity={1}
+          roughness={0.95}
+        />
       </instancedMesh>
     </group>
   );

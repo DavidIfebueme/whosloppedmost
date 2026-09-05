@@ -41,7 +41,39 @@ function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
 
   return (
     <mesh geometry={geometry}>
-      <meshStandardMaterial color="#23232f" roughness={0.9} metalness={0.1} />
+      <meshStandardMaterial
+        color="#2e2e3f"
+        emissive="#0d0d18"
+        emissiveIntensity={1}
+        roughness={0.85}
+        metalness={0.2}
+      />
+    </mesh>
+  );
+}
+
+function GuideLight({ maxDistance }: { readonly maxDistance: number }) {
+  const geometry = useMemo(() => {
+    const samples = 400;
+    const pts: Array<THREE.Vector3> = [];
+    for (let i = 0; i <= samples; i += 1) {
+      const s = (i / samples) * maxDistance;
+      const p = pointAt(s);
+      pts.push(new THREE.Vector3(p.x, p.y + 3.4, p.z));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    return new THREE.TubeGeometry(curve, 400, 0.28, 6, false);
+  }, [maxDistance]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  return (
+    <mesh geometry={geometry}>
+      <meshBasicMaterial color="#ffd84d" toneMapped={false} />
     </mesh>
   );
 }
@@ -87,7 +119,12 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
       frustumCulled={false}
     >
       <boxGeometry args={[0.6, 3, 8]} />
-      <meshStandardMaterial color="#3a3a4d" roughness={0.85} />
+      <meshStandardMaterial
+        color="#4d4d66"
+        emissive="#1a1a28"
+        emissiveIntensity={1}
+        roughness={0.85}
+      />
     </instancedMesh>
   );
 }
@@ -103,19 +140,45 @@ function OriginRebase({ world }: { readonly world: React.RefObject<THREE.Group |
   const rats = useRace((s) => s.rats);
   const selected = useRace((s) => s.selected);
   const resetCounter = useRace((s) => s.resetCounter);
+  const viewTick = useRace((s) => s.viewTick);
+  const viewName = useRace((s) => s.viewName);
   const seenReset = useRef(resetCounter);
+  const seenView = useRef(viewTick);
   const focus = useRef(new THREE.Vector3());
+
+  function applyView(controls: {
+    target: THREE.Vector3;
+    update: () => void;
+  }): void {
+    if (viewName === "pits") {
+      camera.position.set(55, 22, 55);
+      controls.target.set(10, 4, 0);
+    } else if (viewName === "rat") {
+      let best = 0;
+      for (const r of rats) {
+        if (r.distance > best) {
+          best = r.distance;
+        }
+      }
+      const p = pointAt(Math.max(best, 1));
+      camera.position.set(p.x + 22, 14, p.z + 22);
+      controls.target.set(p.x, 3, p.z);
+    } else {
+      camera.position.set(120, 90, 120);
+      controls.target.set(0, 0, 0);
+    }
+    controls.update();
+  }
 
   useFrame(() => {
     const group = world.current;
     if (group === null || controls === null) {
       return;
     }
-    if (seenReset.current !== resetCounter) {
+    if (seenReset.current !== resetCounter || seenView.current !== viewTick) {
       seenReset.current = resetCounter;
-      camera.position.set(120, 90, 120);
-      controls.target.set(0, 0, 0);
-      controls.update();
+      seenView.current = viewTick;
+      applyView(controls);
       return;
     }
     if (selected !== null) {
@@ -201,7 +264,8 @@ export default function RaceScene() {
   const world = useRef<THREE.Group>(null);
   const rats = useRace((s) => s.rats);
   const setRats = useRace((s) => s.setRats);
-  const resetView = useRace((s) => s.resetView);
+  const requestView = useRace((s) => s.requestView);
+  const viewName = useRace((s) => s.viewName);
 
   useEffect(() => {
     let alive = true;
@@ -274,6 +338,7 @@ export default function RaceScene() {
         <group ref={world}>
           <Ground />
           <TrackRibbon maxDistance={maxDistance} />
+          <GuideLight maxDistance={maxDistance} />
           <Barriers maxDistance={maxDistance} />
           <StoryProps maxDistance={maxDistance} />
           <RatSwarm loopLength={maxDistance} />
@@ -304,13 +369,26 @@ export default function RaceScene() {
         >
           ← home
         </a>
-        <button
-          className="rounded-full border border-white/15 bg-black/60 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white/70 backdrop-blur-md transition-colors hover:border-cheese hover:text-cheese"
-          onClick={resetView}
-          type="button"
-        >
-          reset view
-        </button>
+        {(
+          [
+            ["galaxy", "galaxy"],
+            ["pits", "pits"],
+            ["rat", "rat cam"],
+          ] as const
+        ).map(([name, label]) => (
+          <button
+            key={name}
+            className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-widest backdrop-blur-md transition-colors ${
+              viewName === name
+                ? "border-cheese bg-cheese/15 text-cheese"
+                : "border-white/15 bg-black/60 text-white/70 hover:border-cheese hover:text-cheese"
+            }`}
+            onClick={() => requestView(name)}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
       </div>
       <div className="absolute bottom-4 right-4">
         <RatCard />

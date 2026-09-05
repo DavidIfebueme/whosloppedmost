@@ -120,6 +120,7 @@ export default function RatSwarm({
       const bob = Math.sin(t * 10 + i * 1.7) * 0.25;
       dummy.position.set(p.x, 3.2 + bob, p.z);
       dummy.rotation.set(0, yaw, Math.sin(t * 10 + i) * 0.06);
+      dummy.scale.setScalar(1.3);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
       posAttr.setXYZ(i, p.x, 3.2 + bob, p.z);
@@ -137,7 +138,13 @@ export default function RatSwarm({
         args={[geometry, undefined, count]}
         frustumCulled={false}
       >
-        <meshStandardMaterial flatShading roughness={0.8} metalness={0.1} />
+        <meshStandardMaterial
+          flatShading
+          roughness={0.7}
+          metalness={0.15}
+          emissive="#23232e"
+          emissiveIntensity={1}
+        />
       </instancedMesh>
       <points ref={dots} geometry={dotsGeometry} frustumCulled={false}>
         <pointsMaterial size={6} vertexColors sizeAttenuation />
