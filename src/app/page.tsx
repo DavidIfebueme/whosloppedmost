@@ -57,13 +57,13 @@ export default function HomePage() {
   const leader: BoardRat | null = first ?? null;
 
   return (
-    <main className="min-h-screen bg-void text-[#f2f0e9] antialiased">
-      <header className="flex items-center justify-between border-b border-white/10 px-5 py-3 sm:px-8">
+    <main className="min-h-screen bg-[#f3efe4] text-[#17150f] antialiased">
+      <header className="flex items-center justify-between border-b border-black/10 px-5 py-3 sm:px-8">
         <p className="text-xs font-bold uppercase tracking-[0.3em]">
           who slopped the most
         </p>
         <div className="flex items-center gap-3">
-          <p className="font-mono text-[11px] tabular-nums text-white/50">
+          <p className="font-mono text-[11px] tabular-nums text-black/50">
             {failed
               ? "board offline"
               : live.length > 0
@@ -71,7 +71,7 @@ export default function HomePage() {
                 : "counting rats…"}
           </p>
           <a
-            className="rounded-full bg-cheese px-4 py-2 text-xs font-bold uppercase tracking-widest text-black transition-transform active:scale-95"
+            className="rounded-full bg-[#d8352c] px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-transform active:scale-95"
             href="/race"
           >
             enter
@@ -81,7 +81,7 @@ export default function HomePage() {
 
       <section className="grid gap-10 px-5 pb-16 pt-12 sm:px-8 lg:grid-cols-[1.2fr_1fr] lg:pt-20">
         <div>
-          <p className="mb-4 font-mono text-xs uppercase tracking-[0.3em] text-cheese">
+          <p className="mb-4 font-mono text-xs uppercase tracking-[0.3em] text-[#d8352c]">
             an extremely serious productivity leaderboard
           </p>
           <h1
@@ -90,20 +90,20 @@ export default function HomePage() {
           >
             everyone is sprinting. nobody is moving.
           </h1>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-white/60">
+          <p className="mt-5 max-w-md text-sm leading-relaxed text-black/60">
             Real merged PR counts from public GitHub profiles, converted into
             distance along an endless spiral track. The running is real. The
             progress is not.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
-              className="rounded-full bg-cheese px-6 py-3 text-sm font-bold uppercase tracking-widest text-black transition-transform active:scale-95"
+              className="rounded-full bg-[#d8352c] px-6 py-3 text-sm font-bold uppercase tracking-widest text-white transition-transform active:scale-95"
               href="/race"
             >
               watch the race
             </a>
             <a
-              className="rounded-full border border-white/20 px-6 py-3 text-sm font-bold uppercase tracking-widest text-white/80 transition-colors hover:border-cheese hover:text-cheese"
+              className="rounded-full border border-black/20 px-6 py-3 text-sm font-bold uppercase tracking-widest text-black/80 transition-colors hover:border-[#d8352c] hover:text-[#d8352c]"
               href="#method"
             >
               how it works
@@ -111,17 +111,17 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-end border-l-2 border-cheese/70 pl-6">
-          <p className="font-mono text-xs uppercase tracking-[0.3em] text-white/40">
+        <div className="flex flex-col justify-end border-l-2 border-[#d8352c]/70 pl-6">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-black/40">
             distance from start
           </p>
           <p
-            className="font-mono font-bold tabular-nums leading-none text-cheese"
+            className="font-mono font-bold tabular-nums leading-none"
             style={{ fontSize: "clamp(6rem, 18vw, 13rem)" }}
           >
-            0m
+            0<span className="text-[#d8352c]">m</span>
           </p>
-          <p className="mt-2 max-w-xs text-sm text-white/50">
+          <p className="mt-2 max-w-xs text-sm text-black/50">
             {leader !== null
               ? `${leader.handle} has run ${leader.mergedPrs.toLocaleString()} merged PRs and arrived exactly here.`
               : "The leader has lapped the spiral and arrived exactly here."}
@@ -129,12 +129,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="overflow-hidden border-y border-cheese/30 bg-cheese py-2">
+      <div className="overflow-hidden border-y border-[#d8352c] bg-[#d8352c] py-2">
         <div className="flex w-max animate-[marquee_28s_linear_infinite] gap-10 whitespace-nowrap">
           {[...MARQUEE, ...MARQUEE].map((line, i) => (
             <span
               key={i}
-              className="text-xs font-black uppercase tracking-[0.25em] text-black"
+              className="text-xs font-black uppercase tracking-[0.25em] text-white"
             >
               {line} ·
             </span>
@@ -148,47 +148,47 @@ export default function HomePage() {
             current runners
           </h2>
           <a
-            className="font-mono text-xs uppercase tracking-widest text-cheese hover:underline"
+            className="font-mono text-xs uppercase tracking-widest text-[#d8352c] hover:underline"
             href="/race"
           >
             see them run →
           </a>
         </div>
         {live.length === 0 ? (
-          <p className="font-mono text-sm text-white/40">
+          <p className="font-mono text-sm text-black/40">
             {failed
               ? "the board fell off the wheel. reload to try again."
               : "counting rats…"}
           </p>
         ) : (
-          <ol className="divide-y divide-white/10 border-y border-white/10">
+          <ol className="divide-y divide-black/10 border-y border-black/10">
             {live.slice(0, 8).map((rat, i) => (
               <li
                 key={rat.handle}
                 className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-3"
               >
-                <span className="font-mono text-sm tabular-nums text-white/35">
+                <span className="font-mono text-sm tabular-nums text-black/35">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span>
                   <span className="block text-sm font-bold">
                     {rat.handle}
                     {rat.laps > 0 && (
-                      <span className="ml-2 rounded-full bg-cheese/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-cheese">
+                      <span className="ml-2 rounded-full bg-[#d8352c]/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-[#d8352c]">
                         lap {rat.laps}
                       </span>
                     )}
                   </span>
-                  <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-white/10">
+                  <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-black/10">
                     <span
-                      className="block h-full rounded-full bg-cheese"
+                      className="block h-full rounded-full bg-[#d8352c]"
                       style={{ width: `${barWidth(rat.mergedPrs, max)}%` }}
                     />
                   </span>
                 </span>
-                <span className="font-mono text-sm tabular-nums text-white/70">
+                <span className="font-mono text-sm tabular-nums text-black/70">
                   {rat.mergedPrs.toLocaleString()}
-                  <span className="ml-1 text-[10px] uppercase text-white/35">
+                  <span className="ml-1 text-[10px] uppercase text-black/35">
                     prs
                   </span>
                 </span>
@@ -198,11 +198,11 @@ export default function HomePage() {
         )}
       </section>
 
-      <section id="method" className="border-t border-white/10 px-5 py-14 sm:px-8">
+      <section id="method" className="border-t border-black/10 px-5 py-14 sm:px-8">
         <h2 className="mb-8 text-xl font-black uppercase tracking-tight">
           how it works
         </h2>
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-3">
+        <div className="grid gap-px overflow-hidden rounded-2xl border border-black/10 bg-black/10 sm:grid-cols-3">
           {[
             {
               t: "real output",
@@ -217,20 +217,20 @@ export default function HomePage() {
               d: "Suspicious patterns get a public farmed badge and a seat in quarantine. Deleting numbers would ruin the joke.",
             },
           ].map((c) => (
-            <div key={c.t} className="bg-void p-6">
-              <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-cheese">
+            <div key={c.t} className="bg-[#f3efe4] p-6">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-[#d8352c]">
                 {c.t}
               </p>
-              <p className="text-sm leading-relaxed text-white/60">{c.d}</p>
+              <p className="text-sm leading-relaxed text-black/60">{c.d}</p>
             </div>
           ))}
         </div>
-        <footer className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-white/35">
+        <footer className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-6">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-black/35">
             who slopped the most · a monument to velocity
           </p>
           <a
-            className="font-mono text-[11px] uppercase tracking-widest text-white/35 hover:text-cheese"
+            className="font-mono text-[11px] uppercase tracking-widest text-black/35 hover:text-[#d8352c]"
             href="/race"
           >
             back to the track →

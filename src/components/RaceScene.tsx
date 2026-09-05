@@ -254,8 +254,8 @@ function OriginRebase({
     update: () => void;
   }): void {
     if (viewName === "pits") {
-      camera.position.set(55, 22, 55);
-      controls.target.set(10, 4, 0);
+      camera.position.set(95, 45, 95);
+      controls.target.set(0, 2, 0);
     } else if (viewName === "rat") {
       let best = 0;
       for (const r of rats) {
