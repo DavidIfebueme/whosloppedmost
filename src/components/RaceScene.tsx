@@ -411,7 +411,11 @@ function Cheese() {
   });
   return (
     <group>
-      <group ref={ref} position={[0, 38, 0]}>
+      <group ref={ref} position={[0, 44, 0]}>
+        <mesh position={[0, -6, 0]}>
+          <cylinderGeometry args={[7, 9, 2, 16]} />
+          <meshStandardMaterial color="#e8e4d8" roughness={0.9} />
+        </mesh>
         <mesh geometry={trophy}>
           <meshStandardMaterial
             color="#ffd84d"
@@ -422,7 +426,7 @@ function Cheese() {
           />
         </mesh>
       </group>
-      <pointLight position={[0, 44, 0]} intensity={900} distance={600} color="#ffd84d" />
+      <pointLight position={[0, 50, 0]} intensity={900} distance={600} color="#ffd84d" />
     </group>
   );
 }
@@ -450,6 +454,20 @@ function Ground() {
             ? "rgba(255,255,255,0.05)"
             : "rgba(0,40,0,0.09)";
         ctx.fillRect(x, y, 2, 2);
+      }
+      // large tonal patches
+      for (let i = 0; i < 26; i += 1) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const r = 30 + Math.random() * 70;
+        const g = ctx.createRadialGradient(x, y, 4, x, y, r);
+        const dark = Math.random() > 0.5;
+        g.addColorStop(0, dark ? "rgba(30,70,30,0.16)" : "rgba(220,255,200,0.10)");
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
     const tex = new THREE.CanvasTexture(canvas);
@@ -628,7 +646,7 @@ export default function RaceScene() {
             "radial-gradient(ellipse at center, transparent 60%, rgba(10,20,40,0.28) 100%)",
         }}
       />
-      <p className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
+      <p className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/80 backdrop-blur-sm">
         drag to orbit · scroll to zoom · click a rat
       </p>
     </div>

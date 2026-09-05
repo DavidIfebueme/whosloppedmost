@@ -91,7 +91,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
     const runClip = gltf.animations.find((c) => c.name.endsWith("Rat_Run"));
     return rats.map((rat, i) => {
       const group = cloneSkinned(gltf.scene) as THREE.Group;
-      group.scale.setScalar(1.35);
+      group.scale.setScalar(1.5);
       group.traverse((o) => {
         o.frustumCulled = false;
         if (o instanceof THREE.Mesh) {
@@ -168,6 +168,9 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       const bob = Math.sin(t * 9 + i * 1.7) * 0.2;
       runner.group.position.set(p.x, 3.0 + bob, p.z);
       runner.group.rotation.set(0, yaw, 0);
+      const camDist = camera.position.distanceTo(runner.group.position);
+      const mat = runner.tag.material as THREE.SpriteMaterial;
+      mat.opacity = camDist > 1200 ? 0 : camDist > 500 ? 0.85 : 1;
       runner.tag.position.set(0, 7.5, 0);
       const alen = Math.hypot(ahead.x - p.x, ahead.z - p.z) || 1;
       liveSpots[i] = {
@@ -181,38 +184,6 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
   });
 
   return <group ref={holder} />;
-}
-
-function LeaderRing() {
-  const ref = useRef<THREE.Mesh>(null);
-  const rats = useRace((s) => s.rats);
-  useFrame(() => {
-    const m = ref.current;
-    if (m === null) {
-      return;
-    }
-    let bestIdx = 0;
-    let best = -1;
-    rats.forEach((r, i) => {
-      if (r.distance > best) {
-        best = r.distance;
-        bestIdx = i;
-      }
-    });
-    const spot = liveSpots[bestIdx];
-    if (spot === undefined) {
-      m.visible = false;
-      return;
-    }
-    m.visible = true;
-    m.position.set(spot.x, 3.15, spot.z);
-  });
-  return (
-    <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[3.2, 4.2, 32]} />
-      <meshBasicMaterial color="#ffd84d" toneMapped={false} transparent opacity={0.9} side={THREE.DoubleSide} />
-    </mesh>
-  );
 }
 
 function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
@@ -366,7 +337,6 @@ export default function RatSwarm({
       ) : (
         <InstancedFallback loopLength={loopLength} />
       )}
-      <LeaderRing />
       <RatDots loopLength={loopLength} />
     </group>
   );

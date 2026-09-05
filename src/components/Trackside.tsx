@@ -310,7 +310,8 @@ function trackFrame(s: number, maxDistance: number): { x: number; z: number; nx:
 function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
   const data = useMemo(() => {
     const outerR = 20 + 2.5 * Math.sqrt((2 * maxDistance) / 2.5);
-    const standX = outerR + 48;
+    const d = outerR + 52;
+    const yaw = Math.PI / 4;
     const stepGeos: Array<THREE.BufferGeometry> = [];
     const seats: Array<{ x: number; y: number; z: number }> = [];
     const rows = [
@@ -318,21 +319,30 @@ function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
       { off: 7, y: 3.6 },
       { off: 14, y: 5.6 },
     ];
+    const toWorld = (lx: number, lz: number): [number, number] => [
+      -d + lx * Math.cos(yaw) + lz * Math.sin(yaw),
+      -d - lx * Math.sin(yaw) + lz * Math.cos(yaw),
+    ];
     for (const row of rows) {
-      const g = new THREE.BoxGeometry(7, 1.4, 130);
-      g.translate(standX + row.off, row.y, 0);
+      const g = new THREE.BoxGeometry(24, 1.4, 130);
+      const [wx, wz] = toWorld(row.off, 0);
+      g.rotateY(yaw);
+      g.translate(wx, row.y, wz);
       stepGeos.push(g);
     }
     const wall = new THREE.BoxGeometry(1, 2.4, 132);
-    wall.translate(standX - 4.5, 0.7, 0);
+    const [wallX, wallZ] = toWorld(-5, 0);
+    wall.rotateY(yaw);
+    wall.translate(wallX, 0.7, wallZ);
     stepGeos.push(wall);
     for (let z = -60; z <= 60; z += 3) {
       for (const row of rows) {
-        seats.push({ x: standX + row.off, y: row.y + 1.7, z });
+        const [wx, wz] = toWorld(row.off, z);
+        seats.push({ x: wx, y: row.y + 1.7, z: wz });
       }
     }
     const steps = mergeGeometries(stepGeos) ?? new THREE.BoxGeometry(1, 1, 1);
-    return { steps, seats };
+    return { steps, seats, yaw };
   }, [maxDistance]);
 
   const crowdRef = useRef<THREE.InstancedMesh>(null);
@@ -355,7 +365,7 @@ function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
     const rand = mulberry32(99);
     data.seats.forEach((s, i) => {
       dummy.position.set(s.x, s.y, s.z);
-      dummy.rotation.set(0, -Math.PI / 2, 0);
+      dummy.rotation.set(0, Math.PI / 4, 0);
       dummy.scale.setScalar(0.85 + rand() * 0.3);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
@@ -433,6 +443,10 @@ function PitBuilding({ maxDistance }: { readonly maxDistance: number }) {
         <meshStandardMaterial color="#d8352c" roughness={0.8} />
       </mesh>
       <mesh position={[0, 4, 5.05]}>
+        <planeGeometry args={[20, 4]} />
+        <meshBasicMaterial map={tex} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 4, 4.95]} rotation={[0, Math.PI, 0]}>
         <planeGeometry args={[20, 4]} />
         <meshBasicMaterial map={tex} toneMapped={false} />
       </mesh>

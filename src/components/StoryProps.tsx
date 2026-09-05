@@ -77,7 +77,11 @@ function Banners({ maxDistance }: { readonly maxDistance: number }) {
             </mesh>
             <mesh position={[0, 2, 0]}>
               <planeGeometry args={[16, 4]} />
-              <meshBasicMaterial map={tex} side={THREE.DoubleSide} />
+              <meshBasicMaterial map={tex} side={THREE.FrontSide} />
+            </mesh>
+            <mesh position={[0, 2, 0]} rotation={[0, Math.PI, 0]}>
+              <planeGeometry args={[16, 4]} />
+              <meshBasicMaterial map={tex} side={THREE.FrontSide} />
             </mesh>
           </group>
         );
