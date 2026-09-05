@@ -231,17 +231,32 @@ function Crowd() {
 
   return (
     <group>
-      {[64, 86, 108].map((r, i) => (
-        <mesh
-          key={r}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, [5, 11, 17][i] ?? 5, 0]}
-          receiveShadow
-        >
-          <ringGeometry args={[r - 12, r + 12, 48]} />
-          <meshStandardMaterial color="#d9d4c5" roughness={1} />
-        </mesh>
-      ))}
+      {[64, 86, 108].map((r, i) => {
+        const topY = [5, 11, 17][i] ?? 5;
+        return (
+          <group key={r}>
+            <mesh position={[0, topY / 2 - 0.5, 0]}>
+              <cylinderGeometry args={[r + 12, r + 12, topY, 48, 1, true]} />
+              <meshStandardMaterial
+                color="#e8e4d8"
+                roughness={0.95}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+            <mesh
+              rotation={[-Math.PI / 2, 0, 0]}
+              position={[0, topY, 0]}
+              receiveShadow
+            >
+              <ringGeometry args={[r - 12, r + 12, 48]} />
+              <meshStandardMaterial
+                color={["#679c4e", "#5d8a48", "#679c4e"][i] ?? "#5d8a48"}
+                roughness={1}
+              />
+            </mesh>
+          </group>
+        );
+      })}
       <instancedMesh
         ref={mesh}
         args={[undefined, undefined, Math.max(placements.length, 1)]}

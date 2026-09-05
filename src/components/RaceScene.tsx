@@ -433,7 +433,7 @@ function Ground() {
       position={[0, -0.5, 0]}
       receiveShadow
     >
-      <circleGeometry args={[3000, 48]} />
+      <circleGeometry args={[6000, 48]} />
       <meshStandardMaterial map={texture} roughness={1} metalness={0} />
     </mesh>
   );
@@ -492,7 +492,7 @@ export default function RaceScene() {
         }}
       >
         <color attach="background" args={["#87b5e0"]} />
-        <fog attach="fog" args={["#cfe0f0", 400, 3500]} />
+        <fog attach="fog" args={["#cfe0f0", 500, 6000]} />
         <Sky
           distance={45000}
           sunPosition={[120, 60, -80]}
