@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
-import RatSwarm from "@/components/RatSwarm";
+import RatSwarm, { liveSpots } from "@/components/RatSwarm";
 import RatCard from "@/components/RatCard";
 import Leaderboard from "@/components/Leaderboard";
 import RegisterPanel, { loadCustomRats } from "@/components/RegisterPanel";
@@ -129,7 +129,11 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
-function OriginRebase({ world }: { readonly world: React.RefObject<THREE.Group | null> }) {
+function OriginRebase({
+  world,
+}: {
+  readonly world: React.RefObject<THREE.Group | null>;
+}) {
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) =>
     s.controls as unknown as {
@@ -161,7 +165,7 @@ function OriginRebase({ world }: { readonly world: React.RefObject<THREE.Group |
         }
       }
       const p = pointAt(Math.max(best, 1));
-      camera.position.set(p.x + 22, 14, p.z + 22);
+      camera.position.set(p.x + 30, 22, p.z + 30);
       controls.target.set(p.x, 3, p.z);
     } else {
       camera.position.set(120, 90, 120);
@@ -182,11 +186,38 @@ function OriginRebase({ world }: { readonly world: React.RefObject<THREE.Group |
       return;
     }
     if (selected !== null) {
-      const rat = rats.find((r) => r.handle === selected);
-      if (rat !== undefined) {
-        const p = pointAt(rat.distance);
-        focus.current.set(p.x, 4, p.z);
+      const idx = rats.findIndex((r) => r.handle === selected);
+      const spot = idx >= 0 ? liveSpots[idx] : undefined;
+      if (spot !== undefined) {
+        focus.current.set(spot.x, spot.y, spot.z);
         controls.target.lerp(focus.current, 0.08);
+      } else if (idx >= 0) {
+        const rat = rats[idx];
+        if (rat !== undefined) {
+          const p = pointAt(rat.distance);
+          focus.current.set(p.x, 4, p.z);
+          controls.target.lerp(focus.current, 0.08);
+        }
+      }
+    } else if (viewName === "rat") {
+      let bestIdx = 0;
+      let best = -1;
+      rats.forEach((r, i) => {
+        if (r.distance > best) {
+          best = r.distance;
+          bestIdx = i;
+        }
+      });
+      const spot = liveSpots[bestIdx];
+      if (spot !== undefined && rats.length > 0) {
+        focus.current.set(spot.x + spot.tx * 8, spot.y, spot.z + spot.tz * 8);
+        controls.target.lerp(focus.current, 0.2);
+        const want = new THREE.Vector3(
+          spot.x - spot.tx * 22,
+          spot.y + 11,
+          spot.z - spot.tz * 22,
+        );
+        camera.position.lerp(want, 0.12);
       }
     }
     const t = controls.target;

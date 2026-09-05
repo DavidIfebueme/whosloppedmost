@@ -220,6 +220,68 @@ function Crowd() {
   );
 }
 
+const GRAFFITI = [
+  { line: "steve was here. lap 4001.", s: 300 },
+  { line: "i peaked at 12 prs", s: 700 },
+  { line: "the cheese is a lie", s: 1050 },
+];
+
+function makeGraffitiTexture(line: string): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (ctx !== null) {
+    ctx.clearRect(0, 0, 512, 128);
+    ctx.fillStyle = "rgba(200,200,220,0.5)";
+    ctx.font = "italic 44px cursive, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(line, 256, 66, 480);
+    // scrubbed streaks
+    ctx.fillStyle = "rgba(7,7,13,0.55)";
+    for (let i = 0; i < 5; i += 1) {
+      ctx.fillRect(40 + i * 95, 20 + (i % 3) * 22, 70, 12);
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function Graffiti({ maxDistance }: { readonly maxDistance: number }) {
+  const textures = useMemo(() => GRAFFITI.map((g) => makeGraffitiTexture(g.line)), []);
+
+  useEffect(() => {
+    return () => {
+      for (const t of textures) {
+        t.dispose();
+      }
+    };
+  }, [textures]);
+
+  return (
+    <group>
+      {GRAFFITI.map((g, i) => {
+        const s = Math.min(g.s, maxDistance - 10);
+        const p = pointAt(s);
+        const ahead = pointAt(Math.min(s + 2, maxDistance));
+        const yaw = Math.atan2(ahead.x - p.x, ahead.z - p.z);
+        const tex = textures[i % textures.length];
+        if (tex === undefined) {
+          return null;
+        }
+        return (
+          <mesh key={g.line} position={[p.x, 1.6, p.z]} rotation={[0, yaw, 0]}>
+            <planeGeometry args={[10, 2.5]} />
+            <meshBasicMaterial map={tex} transparent opacity={0.85} side={THREE.DoubleSide} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
 export default function StoryProps({
   maxDistance,
 }: {
@@ -228,6 +290,7 @@ export default function StoryProps({
   return (
     <group>
       <Banners maxDistance={maxDistance} />
+      <Graffiti maxDistance={maxDistance} />
       <Jumbotron />
       <Crowd />
     </group>
