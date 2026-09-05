@@ -142,8 +142,8 @@ function OriginRebase({ world }: { readonly world: React.RefObject<THREE.Group |
   const resetCounter = useRace((s) => s.resetCounter);
   const viewTick = useRace((s) => s.viewTick);
   const viewName = useRace((s) => s.viewName);
-  const seenReset = useRef(resetCounter);
-  const seenView = useRef(viewTick);
+  const seenReset = useRef(-1);
+  const seenView = useRef(-1);
   const focus = useRef(new THREE.Vector3());
 
   function applyView(controls: {
