@@ -147,7 +147,7 @@ function Jumbotron() {
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   }, []);
-  const last = useRef(0);
+  const rats = useRace((s) => s.rats);
 
   useEffect(() => {
     return () => {
@@ -155,16 +155,11 @@ function Jumbotron() {
     };
   }, [texture]);
 
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    if (t - last.current < 1) {
-      return;
-    }
-    last.current = t;
+  useEffect(() => {
     const canvas = texture.image as HTMLCanvasElement;
-    drawTower(canvas, useRace.getState().rats);
+    drawTower(canvas, rats);
     texture.needsUpdate = true;
-  });
+  }, [texture, rats]);
 
   return (
     <group position={[34, 0, 0]}>
