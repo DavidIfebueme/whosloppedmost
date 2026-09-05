@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
 import RatSwarm from "@/components/RatSwarm";
@@ -164,6 +164,39 @@ function Cheese() {
   );
 }
 
+function Ground() {
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+    if (ctx !== null) {
+      const g = ctx.createRadialGradient(256, 256, 20, 256, 256, 256);
+      g.addColorStop(0, "#1b1b28");
+      g.addColorStop(0.45, "#101018");
+      g.addColorStop(1, "#07070d");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 512, 512);
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      texture.dispose();
+    };
+  }, [texture]);
+
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+      <circleGeometry args={[3000, 48]} />
+      <meshStandardMaterial map={texture} roughness={1} metalness={0} />
+    </mesh>
+  );
+}
+
 export default function RaceScene() {
   const world = useRef<THREE.Group>(null);
   const rats = useRace((s) => s.rats);
@@ -208,16 +241,38 @@ export default function RaceScene() {
         camera={{ position: [120, 90, 120], fov: 55, near: 0.5, far: 20000 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, logarithmicDepthBuffer: true }}
+        onCreated={({ gl }) => {
+          gl.toneMappingExposure = 1.15;
+        }}
       >
         <color attach="background" args={["#07070d"]} />
-        <fog attach="fog" args={["#07070d", 250, 2600]} />
-        <hemisphereLight args={["#8aa0ff", "#0b0b12", 0.55]} />
-        <directionalLight position={[80, 140, 40]} intensity={1.4} />
+        <fog attach="fog" args={["#07070d", 280, 3000]} />
+        <hemisphereLight args={["#8aa0ff", "#0b0b12", 0.5]} />
+        <directionalLight position={[80, 140, 40]} intensity={1.5} />
+        <Environment resolution={256}>
+          <group rotation={[-Math.PI / 3, 0, 0]}>
+            <Lightformer
+              form="circle"
+              intensity={4}
+              position={[0, 5, -9]}
+              scale={2}
+            />
+            <Lightformer
+              color="#8aa0ff"
+              intensity={1.5}
+              position={[-5, 1, -1]}
+              scale={[20, 0.5, 1]}
+            />
+            <Lightformer
+              color="#ffd84d"
+              intensity={2}
+              position={[5, -1, 0]}
+              scale={[20, 1, 1]}
+            />
+          </group>
+        </Environment>
         <group ref={world}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-            <circleGeometry args={[3000, 48]} />
-            <meshStandardMaterial color="#0b0b14" roughness={1} />
-          </mesh>
+          <Ground />
           <TrackRibbon maxDistance={maxDistance} />
           <Barriers maxDistance={maxDistance} />
           <StoryProps maxDistance={maxDistance} />
@@ -260,6 +315,13 @@ export default function RaceScene() {
       <div className="absolute bottom-4 right-4">
         <RatCard />
       </div>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,0.6) 100%)",
+        }}
+      />
       <p className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
         drag to orbit · scroll to zoom · click a rat
       </p>
