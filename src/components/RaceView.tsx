@@ -19,6 +19,7 @@ function isCameraView(value: string): value is CameraView {
 
 export default function RaceView() {
   const requestView = useRace((s) => s.requestView);
+  const setSelected = useRace((s) => s.setSelected);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -26,7 +27,11 @@ export default function RaceView() {
     if (isCameraView(view)) {
       requestView(view);
     }
-  }, [requestView]);
+    const select = params.get("select") ?? "";
+    if (select.trim().length > 0) {
+      setSelected(select.trim().toLowerCase());
+    }
+  }, [requestView, setSelected]);
 
   return <RaceScene />;
 }

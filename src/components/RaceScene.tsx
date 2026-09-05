@@ -210,14 +210,14 @@ function OriginRebase({
       });
       const spot = liveSpots[bestIdx];
       if (spot !== undefined && rats.length > 0) {
-        focus.current.set(spot.x + spot.tx * 8, spot.y, spot.z + spot.tz * 8);
-        controls.target.lerp(focus.current, 0.2);
+        focus.current.set(spot.x + spot.tx * 6, spot.y, spot.z + spot.tz * 6);
+        controls.target.lerp(focus.current, 0.25);
         const want = new THREE.Vector3(
-          spot.x - spot.tx * 22,
-          spot.y + 11,
-          spot.z - spot.tz * 22,
+          spot.x - spot.tx * 18,
+          spot.y + 10,
+          spot.z - spot.tz * 18,
         );
-        camera.position.lerp(want, 0.12);
+        camera.position.lerp(want, 0.15);
       }
     }
     const t = controls.target;
@@ -297,6 +297,8 @@ export default function RaceScene() {
   const setRats = useRace((s) => s.setRats);
   const requestView = useRace((s) => s.requestView);
   const viewName = useRace((s) => s.viewName);
+  const selected = useRace((s) => s.selected);
+  const followActive = selected !== null || viewName === "rat";
 
   useEffect(() => {
     let alive = true;
@@ -378,6 +380,7 @@ export default function RaceScene() {
         <OriginRebase world={world} />
         <OrbitControls
           makeDefault
+          enabled={!followActive}
           enableDamping
           dampingFactor={0.08}
           minDistance={8}
