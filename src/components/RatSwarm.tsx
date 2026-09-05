@@ -74,8 +74,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
           const mats = Array.isArray(o.material) ? o.material : [o.material];
           for (const mat of mats) {
             if (mat instanceof THREE.MeshStandardMaterial) {
-              mat.emissive = mat.color.clone().multiplyScalar(0.5);
-              mat.envMapIntensity = 1.2;
+              mat.envMapIntensity = 0.9;
             }
           }
         }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { pointAt } from "@/lib/spiral";
+import { useRace } from "@/store/race";
 
 const BANNER_LINES = [
   "VELOCITY IS VIRTUE",
@@ -85,39 +86,63 @@ function Banners({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
-function drawJumbotron(
-  canvas: HTMLCanvasElement,
-  total: number,
-): void {
+interface TowerRow {
+  readonly handle: string;
+  readonly mergedPrs: number;
+}
+
+function drawTower(canvas: HTMLCanvasElement, rows: ReadonlyArray<TowerRow>): void {
   const ctx = canvas.getContext("2d");
   if (ctx === null) {
     return;
   }
-  ctx.fillStyle = "#05050a";
-  ctx.fillRect(0, 0, 512, 256);
-  ctx.fillStyle = "#ffd84d";
+  ctx.fillStyle = "#0a0e1a";
+  ctx.fillRect(0, 0, 512, 512);
+  ctx.fillStyle = "#d8352c";
+  ctx.fillRect(0, 0, 512, 64);
+  ctx.fillStyle = "#ffffff";
   ctx.font = "bold 30px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("WHO SLOPPED MOST", 20, 42);
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#ffd84d";
+  ctx.fillText("LIVE", 492, 42);
+  const sorted = [...rows].sort((a, b) => b.mergedPrs - a.mergedPrs);
+  const leader = sorted[0]?.mergedPrs ?? 0;
+  sorted.slice(0, 12).forEach((r, i) => {
+    const y = 100 + i * 33;
+    const leaderRow = i === 0;
+    ctx.fillStyle = leaderRow ? "rgba(255,216,77,0.16)" : "transparent";
+    ctx.fillRect(0, y - 24, 512, 31);
+    ctx.textAlign = "left";
+    ctx.fillStyle = leaderRow ? "#ffd84d" : "#8a93a8";
+    ctx.font = "bold 22px monospace";
+    ctx.fillText(`P${i + 1}`, 20, y);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillText(r.handle.slice(0, 14), 80, y);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#c7cede";
+    ctx.font = "22px monospace";
+    const gap = leader - r.mergedPrs;
+    ctx.fillText(gap === 0 ? "LEADER" : `+${gap.toLocaleString()}`, 492, y);
+  });
   ctx.textAlign = "center";
-  ctx.fillText("TOTAL DISTANCE RUN", 256, 60);
-  ctx.fillStyle = "#f2f0e9";
-  ctx.font = "bold 64px monospace";
-  ctx.fillText(`${total * 137}m`, 256, 140);
-  ctx.fillStyle = "#555566";
-  ctx.font = "24px sans-serif";
-  ctx.fillText("DISTANCE FROM START: 0m", 256, 200);
+  ctx.fillStyle = "#5a6378";
+  ctx.font = "20px sans-serif";
+  ctx.fillText("DISTANCE FROM START: 0m", 256, 496);
 }
 
 function Jumbotron() {
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
-    canvas.height = 256;
-    drawJumbotron(canvas, 0);
+    canvas.height = 512;
+    drawTower(canvas, []);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   }, []);
-  const total = useRef(0);
   const last = useRef(0);
 
   useEffect(() => {
@@ -128,24 +153,23 @@ function Jumbotron() {
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    total.current += 1;
     if (t - last.current < 1) {
       return;
     }
     last.current = t;
     const canvas = texture.image as HTMLCanvasElement;
-    drawJumbotron(canvas, total.current);
+    drawTower(canvas, useRace.getState().rats);
     texture.needsUpdate = true;
   });
 
   return (
     <group position={[34, 0, 0]}>
-      <mesh position={[0, 14, 0]}>
-        <boxGeometry args={[1.5, 28, 1.5]} />
-        <meshStandardMaterial color="#2c2c3a" roughness={0.9} />
+      <mesh position={[0, 20, 0]} castShadow>
+        <boxGeometry args={[2, 40, 2]} />
+        <meshStandardMaterial color="#3a3f45" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 32, 0]}>
-        <boxGeometry args={[22, 12, 1]} />
+      <mesh position={[0, 52, 0]} castShadow>
+        <boxGeometry args={[30, 30, 1.5]} />
         <meshBasicMaterial map={texture} toneMapped={false} />
       </mesh>
     </group>
@@ -154,6 +178,13 @@ function Jumbotron() {
 
 function Crowd() {
   const mesh = useRef<THREE.InstancedMesh>(null);
+  const palette = useMemo(
+    () =>
+      ["#d8352c", "#ffd84d", "#2c7dd3", "#f2f0e9", "#37b36b", "#ff7ab8", "#ff8c2c"].map(
+        (c) => new THREE.Color(c),
+      ),
+    [],
+  );
   const placements = useMemo(() => {
     const list: Array<{ x: number; y: number; z: number; yaw: number }> = [];
     const rings = [
@@ -187,9 +218,16 @@ function Crowd() {
       dummy.rotation.set(0, c.yaw, 0);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
+      const col = palette[i % palette.length];
+      if (col !== undefined) {
+        m.setColorAt(i, col);
+      }
     });
     m.instanceMatrix.needsUpdate = true;
-  }, [placements]);
+    if (m.instanceColor !== null) {
+      m.instanceColor.needsUpdate = true;
+    }
+  }, [placements, palette]);
 
   return (
     <group>
@@ -198,23 +236,20 @@ function Crowd() {
           key={r}
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, [5, 11, 17][i] ?? 5, 0]}
+          receiveShadow
         >
           <ringGeometry args={[r - 12, r + 12, 48]} />
-          <meshStandardMaterial color="#15151f" roughness={1} />
+          <meshStandardMaterial color="#d9d4c5" roughness={1} />
         </mesh>
       ))}
       <instancedMesh
         ref={mesh}
         args={[undefined, undefined, Math.max(placements.length, 1)]}
         frustumCulled={false}
+        castShadow
       >
         <capsuleGeometry args={[1.1, 1.6, 3, 6]} />
-        <meshStandardMaterial
-          color="#4d4d63"
-          emissive="#14141f"
-          emissiveIntensity={1}
-          roughness={0.95}
-        />
+        <meshStandardMaterial roughness={0.9} />
       </instancedMesh>
     </group>
   );
