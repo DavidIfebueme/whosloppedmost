@@ -44,6 +44,27 @@ function buildFallbackGeometry(): THREE.BufferGeometry {
   );
 }
 
+function makeTagTexture(handle: string, gold: boolean): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  if (ctx !== null) {
+    ctx.fillStyle = "rgba(5,8,5,0.62)";
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 256, 64, 18);
+    ctx.fill();
+    ctx.fillStyle = gold ? "#ffd84d" : "#ffffff";
+    ctx.font = "bold 30px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(handle.slice(0, 14), 128, 34, 230);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function ratColor(laps: number, stale: boolean): THREE.Color {
   if (stale) {
     return new THREE.Color("#555566");
@@ -57,6 +78,8 @@ function ratColor(laps: number, stale: boolean): THREE.Color {
 interface Runner {
   readonly group: THREE.Group;
   readonly mixer: THREE.AnimationMixer | null;
+  readonly tag: THREE.Sprite;
+  readonly tagTexture: THREE.CanvasTexture;
 }
 
 function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
@@ -74,6 +97,9 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
           const mats = Array.isArray(o.material) ? o.material : [o.material];
           for (const mat of mats) {
             if (mat instanceof THREE.MeshStandardMaterial) {
+              if (mat.name === "Grey") {
+                mat.color.set("#8a6f55");
+              }
               mat.envMapIntensity = 0.9;
             }
           }
@@ -89,7 +115,17 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       group.traverse((o) => {
         o.frustumCulled = false;
       });
-      return { group, mixer };
+      const tagTexture = makeTagTexture(rat.handle, rat.laps > 0);
+      const tag = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: tagTexture,
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      tag.scale.set(11, 2.75, 1);
+      group.add(tag);
+      return { group, mixer, tag, tagTexture };
     });
   }, [gltf, rats]);
 
@@ -105,6 +141,8 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       for (const r of runners) {
         h.remove(r.group);
         r.mixer?.stopAllAction();
+        r.tagTexture.dispose();
+        (r.tag.material as THREE.SpriteMaterial).dispose();
       }
     };
   }, [runners]);
@@ -129,6 +167,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       const bob = Math.sin(t * 9 + i * 1.7) * 0.2;
       runner.group.position.set(p.x, 3.0 + bob, p.z);
       runner.group.rotation.set(0, yaw, 0);
+      runner.tag.position.set(0, 7.5, 0);
       const alen = Math.hypot(ahead.x - p.x, ahead.z - p.z) || 1;
       liveSpots[i] = {
         x: p.x,

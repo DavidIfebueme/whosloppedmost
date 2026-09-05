@@ -176,99 +176,6 @@ function Jumbotron() {
   );
 }
 
-function Crowd() {
-  const mesh = useRef<THREE.InstancedMesh>(null);
-  const palette = useMemo(
-    () =>
-      ["#d8352c", "#ffd84d", "#2c7dd3", "#f2f0e9", "#37b36b", "#ff7ab8", "#ff8c2c"].map(
-        (c) => new THREE.Color(c),
-      ),
-    [],
-  );
-  const placements = useMemo(() => {
-    const list: Array<{ x: number; y: number; z: number; yaw: number }> = [];
-    const rings = [
-      { r: 64, y: 6, n: 60 },
-      { r: 86, y: 12, n: 80 },
-      { r: 108, y: 18, n: 100 },
-    ];
-    for (const ring of rings) {
-      for (let i = 0; i < ring.n; i += 1) {
-        const a = (i / ring.n) * Math.PI * 2;
-        // faces point outward, away from the track
-        list.push({
-          x: Math.cos(a) * ring.r,
-          y: ring.y,
-          z: Math.sin(a) * ring.r,
-          yaw: -a + Math.PI / 2,
-        });
-      }
-    }
-    return list;
-  }, []);
-
-  useEffect(() => {
-    const m = mesh.current;
-    if (m === null) {
-      return;
-    }
-    const dummy = new THREE.Object3D();
-    placements.forEach((c, i) => {
-      dummy.position.set(c.x, c.y, c.z);
-      dummy.rotation.set(0, c.yaw, 0);
-      dummy.updateMatrix();
-      m.setMatrixAt(i, dummy.matrix);
-      const col = palette[i % palette.length];
-      if (col !== undefined) {
-        m.setColorAt(i, col);
-      }
-    });
-    m.instanceMatrix.needsUpdate = true;
-    if (m.instanceColor !== null) {
-      m.instanceColor.needsUpdate = true;
-    }
-  }, [placements, palette]);
-
-  return (
-    <group>
-      {[64, 86, 108].map((r, i) => {
-        const topY = [5, 11, 17][i] ?? 5;
-        return (
-          <group key={r}>
-            <mesh position={[0, topY / 2 - 0.5, 0]}>
-              <cylinderGeometry args={[r + 12, r + 12, topY, 48, 1, true]} />
-              <meshStandardMaterial
-                color="#e8e4d8"
-                roughness={0.95}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-            <mesh
-              rotation={[-Math.PI / 2, 0, 0]}
-              position={[0, topY, 0]}
-              receiveShadow
-            >
-              <ringGeometry args={[r - 12, r + 12, 48]} />
-              <meshStandardMaterial
-                color={["#679c4e", "#5d8a48", "#679c4e"][i] ?? "#5d8a48"}
-                roughness={1}
-              />
-            </mesh>
-          </group>
-        );
-      })}
-      <instancedMesh
-        ref={mesh}
-        args={[undefined, undefined, Math.max(placements.length, 1)]}
-        frustumCulled={false}
-        castShadow
-      >
-        <capsuleGeometry args={[1.1, 1.6, 3, 6]} />
-        <meshStandardMaterial roughness={0.9} />
-      </instancedMesh>
-    </group>
-  );
-}
 
 const GRAFFITI = [
   { line: "steve was here. lap 4001.", s: 300 },
@@ -342,7 +249,6 @@ export default function StoryProps({
       <Banners maxDistance={maxDistance} />
       <Graffiti maxDistance={maxDistance} />
       <Jumbotron />
-      <Crowd />
     </group>
   );
 }
