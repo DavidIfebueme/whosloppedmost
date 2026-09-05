@@ -10,6 +10,7 @@ import RatCard from "@/components/RatCard";
 import Leaderboard from "@/components/Leaderboard";
 import RegisterPanel, { loadCustomRats } from "@/components/RegisterPanel";
 import StoryProps from "@/components/StoryProps";
+import Trackside from "@/components/Trackside";
 import { useRace } from "@/store/race";
 
 interface RatDatum {
@@ -531,6 +532,7 @@ export default function RaceScene() {
           <GuideLight maxDistance={maxDistance} />
           <Barriers maxDistance={maxDistance} />
           <StoryProps maxDistance={maxDistance} />
+          <Trackside maxDistance={maxDistance} />
           <RatSwarm loopLength={maxDistance} />
           <Cheese />
         </group>
