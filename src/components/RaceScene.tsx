@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls, Sky } from "@react-three/drei";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
 import RatSwarm, { liveSpots } from "@/components/RatSwarm";
 import RatCard from "@/components/RatCard";
@@ -370,7 +371,33 @@ function SunRig() {
 }
 
 function Cheese() {
-  const ref = useRef<THREE.Mesh>(null);
+  const ref = useRef<THREE.Group>(null);
+  const trophy = useMemo(() => {
+    const parts: Array<THREE.BufferGeometry> = [];
+    const cup = new THREE.CylinderGeometry(4.2, 2.2, 5, 12);
+    cup.translate(0, 6.5, 0);
+    parts.push(cup);
+    const stem = new THREE.CylinderGeometry(0.9, 1.4, 3.4, 8);
+    stem.translate(0, 2.2, 0);
+    parts.push(stem);
+    const base = new THREE.CylinderGeometry(2.6, 3.0, 1.2, 12);
+    base.translate(0, 0, 0);
+    parts.push(base);
+    for (const side of [-1, 1]) {
+      const handle = new THREE.TorusGeometry(2.2, 0.45, 6, 12, Math.PI);
+      handle.rotateZ(side > 0 ? -Math.PI / 2 : Math.PI / 2);
+      handle.translate(side * 4.4, 6.2, 0);
+      parts.push(handle);
+    }
+    return mergeGeometries(parts) ?? new THREE.BoxGeometry(1, 1, 1);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      trophy.dispose();
+    };
+  }, [trophy]);
+
   useFrame((_, delta) => {
     if (ref.current !== null) {
       ref.current.rotation.y += delta * 0.4;
@@ -378,16 +405,18 @@ function Cheese() {
   });
   return (
     <group>
-      <mesh ref={ref} position={[0, 42, 0]}>
-        <octahedronGeometry args={[7, 0]} />
-        <meshStandardMaterial
-          color="#ffd84d"
-          emissive="#ffd84d"
-          emissiveIntensity={0.9}
-          roughness={0.4}
-        />
-      </mesh>
-      <pointLight position={[0, 42, 0]} intensity={900} distance={600} color="#ffd84d" />
+      <group ref={ref} position={[0, 38, 0]}>
+        <mesh geometry={trophy}>
+          <meshStandardMaterial
+            color="#ffd84d"
+            emissive="#8a6a00"
+            emissiveIntensity={0.55}
+            roughness={0.25}
+            metalness={0.85}
+          />
+        </mesh>
+      </group>
+      <pointLight position={[0, 44, 0]} intensity={900} distance={600} color="#ffd84d" />
     </group>
   );
 }

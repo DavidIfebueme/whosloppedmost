@@ -91,6 +91,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
     const runClip = gltf.animations.find((c) => c.name.endsWith("Rat_Run"));
     return rats.map((rat, i) => {
       const group = cloneSkinned(gltf.scene) as THREE.Group;
+      group.scale.setScalar(1.35);
       group.traverse((o) => {
         o.frustumCulled = false;
         if (o instanceof THREE.Mesh) {
@@ -180,6 +181,38 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
   });
 
   return <group ref={holder} />;
+}
+
+function LeaderRing() {
+  const ref = useRef<THREE.Mesh>(null);
+  const rats = useRace((s) => s.rats);
+  useFrame(() => {
+    const m = ref.current;
+    if (m === null) {
+      return;
+    }
+    let bestIdx = 0;
+    let best = -1;
+    rats.forEach((r, i) => {
+      if (r.distance > best) {
+        best = r.distance;
+        bestIdx = i;
+      }
+    });
+    const spot = liveSpots[bestIdx];
+    if (spot === undefined) {
+      m.visible = false;
+      return;
+    }
+    m.visible = true;
+    m.position.set(spot.x, 3.15, spot.z);
+  });
+  return (
+    <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[3.2, 4.2, 32]} />
+      <meshBasicMaterial color="#ffd84d" toneMapped={false} transparent opacity={0.9} side={THREE.DoubleSide} />
+    </mesh>
+  );
 }
 
 function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
@@ -333,6 +366,7 @@ export default function RatSwarm({
       ) : (
         <InstancedFallback loopLength={loopLength} />
       )}
+      <LeaderRing />
       <RatDots loopLength={loopLength} />
     </group>
   );

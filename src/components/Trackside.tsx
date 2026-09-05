@@ -90,6 +90,16 @@ function StartGantry() {
         <planeGeometry args={[15, 4.5]} />
         <meshBasicMaterial map={tex} side={THREE.DoubleSide} toneMapped={false} />
       </mesh>
+      <mesh position={[0, 8.2, 0.8]}>
+        <boxGeometry args={[6, 1.6, 0.4]} />
+        <meshStandardMaterial color="#111114" roughness={0.6} />
+      </mesh>
+      {[0, 1, 2, 3].map((i) => (
+        <mesh key={i} position={[-2.1 + i * 1.4, 8.2, 1.05]}>
+          <circleGeometry args={[0.45, 12]} />
+          <meshBasicMaterial color="#ff2c22" toneMapped={false} />
+        </mesh>
+      ))}
       <mesh position={[0, 3.15, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[5.6, 2.2]} />
         <meshBasicMaterial map={checkerTexture(7, 3)} toneMapped={false} />
@@ -282,6 +292,274 @@ function Trees() {
   );
 }
 
+function trackFrame(s: number, maxDistance: number): { x: number; z: number; nx: number; nz: number; yaw: number } {
+  const p = pointAt(Math.min(Math.max(s, 0), maxDistance));
+  const ahead = pointAt(Math.min(Math.max(s + 2, 0), maxDistance));
+  const dx = ahead.x - p.x;
+  const dz = ahead.z - p.z;
+  const len = Math.hypot(dx, dz) || 1;
+  return {
+    x: p.x,
+    z: p.z,
+    nx: -dz / len,
+    nz: dx / len,
+    yaw: Math.atan2(dx, dz),
+  };
+}
+
+function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
+  const data = useMemo(() => {
+    const stepGeos: Array<THREE.BufferGeometry> = [];
+    const seats: Array<{ x: number; y: number; z: number; yaw: number }> = [];
+    const rows = [
+      { off: 13, y: 1.6 },
+      { off: 19, y: 3.4 },
+      { off: 25, y: 5.2 },
+    ];
+    for (let s = 12; s < 132; s += 30) {
+      const a = trackFrame(s, maxDistance);
+      const b = trackFrame(Math.min(s + 32, maxDistance), maxDistance);
+      const mx = (a.x + b.x) / 2;
+      const mz = (a.z + b.z) / 2;
+      const yaw = Math.atan2(b.x - a.x, b.z - a.z);
+      const segLen = Math.hypot(b.x - a.x, b.z - a.z) + 2;
+      for (const row of rows) {
+        const g = new THREE.BoxGeometry(7, 1.4, segLen);
+        g.rotateY(yaw);
+        g.translate(mx + a.nx * row.off, row.y, mz + a.nz * row.off);
+        stepGeos.push(g);
+      }
+      for (let d = 4; d < segLen - 2; d += 2.6) {
+        const t = d / segLen;
+        const bx = a.x + (b.x - a.x) * t;
+        const bz = a.z + (b.z - a.z) * t;
+        const bnx = a.nx + (b.nx - a.nx) * t;
+        const bnz = a.nz + (b.nz - a.nz) * t;
+        for (const row of rows) {
+          seats.push({
+            x: bx + bnx * row.off,
+            y: row.y + 1.6,
+            z: bz + bnz * row.off,
+            yaw: Math.atan2(-bnx, -bnz),
+          });
+        }
+      }
+    }
+    // front retaining wall
+    for (let s = 12; s < 132; s += 30) {
+      const a = trackFrame(s, maxDistance);
+      const b = trackFrame(Math.min(s + 32, maxDistance), maxDistance);
+      const g = new THREE.BoxGeometry(0.8, 2.2, Math.hypot(b.x - a.x, b.z - a.z) + 2);
+      const yaw = Math.atan2(b.x - a.x, b.z - a.z);
+      g.rotateY(yaw);
+      g.translate((a.x + b.x) / 2 + a.nx * 9, 0.6, (a.z + b.z) / 2 + a.nz * 9);
+      stepGeos.push(g);
+    }
+    const steps = mergeGeometries(stepGeos) ?? new THREE.BoxGeometry(1, 1, 1);
+    return { steps, seats };
+  }, [maxDistance]);
+
+  const crowdRef = useRef<THREE.InstancedMesh>(null);
+
+  useEffect(() => {
+    const m = crowdRef.current;
+    if (m === null) {
+      return;
+    }
+    const dummy = new THREE.Object3D();
+    const base = [
+      "#7a8494",
+      "#a33b32",
+      "#3c5a80",
+      "#c9c2b4",
+      "#4a5d43",
+      "#8a6f55",
+      "#5d5468",
+    ].map((c) => new THREE.Color(c));
+    const rand = mulberry32(99);
+    data.seats.forEach((s, i) => {
+      dummy.position.set(s.x, s.y, s.z);
+      dummy.rotation.set(0, s.yaw, 0);
+      dummy.scale.setScalar(0.85 + rand() * 0.3);
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
+      const c = base[i % base.length];
+      if (c !== undefined) {
+        m.setColorAt(i, c.clone().multiplyScalar(0.85 + rand() * 0.3));
+      }
+    });
+    m.instanceMatrix.needsUpdate = true;
+    if (m.instanceColor !== null) {
+      m.instanceColor.needsUpdate = true;
+    }
+    return () => {
+      data.steps.dispose();
+    };
+  }, [data]);
+
+  return (
+    <group>
+      <mesh geometry={data.steps} receiveShadow castShadow>
+        <meshStandardMaterial color="#e3ded2" roughness={0.95} />
+      </mesh>
+      <instancedMesh
+        ref={crowdRef}
+        args={[undefined, undefined, Math.max(data.seats.length, 1)]}
+        frustumCulled={false}
+        castShadow
+      >
+        <capsuleGeometry args={[0.55, 1.0, 3, 6]} />
+        <meshStandardMaterial roughness={0.95} />
+      </instancedMesh>
+    </group>
+  );
+}
+
+function PitBuilding({ maxDistance }: { readonly maxDistance: number }) {
+  const tex = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    if (ctx !== null) {
+      ctx.fillStyle = "#f2f0e9";
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.fillStyle = "#111114";
+      ctx.font = "bold 40px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("PITS", 128, 34);
+    }
+    const t = new THREE.CanvasTexture(canvas);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, []);
+
+  const pose = useMemo(() => {
+    const f = trackFrame(70, maxDistance);
+    return { ...f, x: f.x - f.nx * 26, z: f.z - f.nz * 26 };
+  }, [maxDistance]);
+
+  useEffect(() => {
+    return () => {
+      tex.dispose();
+    };
+  }, [tex]);
+
+  return (
+    <group position={[pose.x, 0, pose.z]} rotation={[0, pose.yaw, 0]}>
+      <mesh position={[0, 4, 0]} castShadow receiveShadow>
+        <boxGeometry args={[44, 8, 10]} />
+        <meshStandardMaterial color="#dfe3e6" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 8.6, 0]} castShadow>
+        <boxGeometry args={[46, 1.2, 12]} />
+        <meshStandardMaterial color="#d8352c" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, 4, 5.05]}>
+        <planeGeometry args={[20, 4]} />
+        <meshBasicMaterial map={tex} toneMapped={false} />
+      </mesh>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <mesh key={i} position={[-16 + i * 8, 1.5, 5.4]}>
+          <boxGeometry args={[5, 3, 0.3]} />
+          <meshStandardMaterial color="#20242a" roughness={0.4} metalness={0.3} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Horizon() {
+  const treesRef = useRef<THREE.InstancedMesh>(null);
+
+  const spots = useMemo(() => {
+    const rand = mulberry32(5);
+    const list: Array<{ x: number; z: number; s: number }> = [];
+    for (let i = 0; i < 46; i += 1) {
+      const a = (i / 46) * Math.PI * 2 + rand() * 0.1;
+      const r = 1500 + rand() * 1100;
+      list.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, s: 3 + rand() * 4 });
+    }
+    return list;
+  }, []);
+
+  const cloudTex = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    if (ctx !== null) {
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      const blobs: Array<[number, number, number]> = [
+        [70, 80, 34],
+        [120, 70, 44],
+        [175, 78, 36],
+        [140, 90, 30],
+      ];
+      for (const [x, y, r] of blobs) {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    const t = new THREE.CanvasTexture(canvas);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, []);
+
+  const clouds = useMemo(() => {
+    const rand = mulberry32(11);
+    return [0, 1, 2, 3, 4, 5].map((i) => ({
+      x: (rand() - 0.5) * 4000,
+      y: 420 + rand() * 220,
+      z: (rand() - 0.5) * 4000,
+      s: 500 + rand() * 500,
+      key: i,
+    }));
+  }, []);
+
+  useEffect(() => {
+    const m = treesRef.current;
+    if (m === null) {
+      return;
+    }
+    const dummy = new THREE.Object3D();
+    spots.forEach((t, i) => {
+      dummy.position.set(t.x, 0, t.z);
+      dummy.scale.setScalar(t.s);
+      dummy.rotation.set(0, (i * 1.3) % Math.PI, 0);
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
+    });
+    m.instanceMatrix.needsUpdate = true;
+  }, [spots]);
+
+  useEffect(() => {
+    return () => {
+      cloudTex.dispose();
+    };
+  }, [cloudTex]);
+
+  return (
+    <group>
+      <instancedMesh
+        ref={treesRef}
+        args={[undefined, undefined, spots.length]}
+        frustumCulled={false}
+      >
+        <coneGeometry args={[26, 90, 6]} />
+        <meshStandardMaterial color="#3d6b3a" roughness={1} flatShading />
+      </instancedMesh>
+      {clouds.map((c) => (
+        <sprite key={c.key} position={[c.x, c.y, c.z]} scale={[c.s, c.s / 2.4, 1]}>
+          <spriteMaterial map={cloudTex} transparent opacity={0.9} depthWrite={false} />
+        </sprite>
+      ))}
+    </group>
+  );
+}
+
 export default function Trackside({
   maxDistance,
 }: {
@@ -290,9 +568,12 @@ export default function Trackside({
   return (
     <group>
       <StartGantry />
+      <Grandstand maxDistance={maxDistance} />
+      <PitBuilding maxDistance={maxDistance} />
       <TireStacks maxDistance={maxDistance} />
       <Floodlights />
       <Trees />
+      <Horizon />
     </group>
   );
 }
