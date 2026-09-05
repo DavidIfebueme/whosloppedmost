@@ -209,13 +209,19 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
       return;
     }
     const dummy = new THREE.Object3D();
+    const red = new THREE.Color("#d8352c");
+    const white = new THREE.Color("#f2f0e9");
     placements.forEach((b, i) => {
       dummy.position.set(b.x, 1.5, b.z);
       dummy.rotation.set(0, b.yaw, 0);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
+      m.setColorAt(i, i % 2 === 0 ? red : white);
     });
     m.instanceMatrix.needsUpdate = true;
+    if (m.instanceColor !== null) {
+      m.instanceColor.needsUpdate = true;
+    }
   }, [placements]);
 
   return (
@@ -225,7 +231,7 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
       frustumCulled={false}
     >
       <boxGeometry args={[0.6, 3, 8]} />
-      <meshStandardMaterial color="#d7dade" roughness={0.9} />
+      <meshStandardMaterial roughness={0.9} />
     </instancedMesh>
   );
 }

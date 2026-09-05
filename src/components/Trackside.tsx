@@ -309,51 +309,27 @@ function trackFrame(s: number, maxDistance: number): { x: number; z: number; nx:
 
 function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
   const data = useMemo(() => {
+    const outerR = 20 + 2.5 * Math.sqrt((2 * maxDistance) / 2.5);
+    const standX = outerR + 48;
     const stepGeos: Array<THREE.BufferGeometry> = [];
-    const seats: Array<{ x: number; y: number; z: number; yaw: number }> = [];
+    const seats: Array<{ x: number; y: number; z: number }> = [];
     const rows = [
-      { off: 13, y: 1.6 },
-      { off: 19, y: 3.4 },
-      { off: 25, y: 5.2 },
+      { off: 0, y: 1.6 },
+      { off: 7, y: 3.6 },
+      { off: 14, y: 5.6 },
     ];
-    for (let s = 12; s < 132; s += 30) {
-      const a = trackFrame(s, maxDistance);
-      const b = trackFrame(Math.min(s + 32, maxDistance), maxDistance);
-      const mx = (a.x + b.x) / 2;
-      const mz = (a.z + b.z) / 2;
-      const yaw = Math.atan2(b.x - a.x, b.z - a.z);
-      const segLen = Math.hypot(b.x - a.x, b.z - a.z) + 2;
-      for (const row of rows) {
-        const g = new THREE.BoxGeometry(7, 1.4, segLen);
-        g.rotateY(yaw);
-        g.translate(mx + a.nx * row.off, row.y, mz + a.nz * row.off);
-        stepGeos.push(g);
-      }
-      for (let d = 4; d < segLen - 2; d += 2.6) {
-        const t = d / segLen;
-        const bx = a.x + (b.x - a.x) * t;
-        const bz = a.z + (b.z - a.z) * t;
-        const bnx = a.nx + (b.nx - a.nx) * t;
-        const bnz = a.nz + (b.nz - a.nz) * t;
-        for (const row of rows) {
-          seats.push({
-            x: bx + bnx * row.off,
-            y: row.y + 1.6,
-            z: bz + bnz * row.off,
-            yaw: Math.atan2(-bnx, -bnz),
-          });
-        }
-      }
-    }
-    // front retaining wall
-    for (let s = 12; s < 132; s += 30) {
-      const a = trackFrame(s, maxDistance);
-      const b = trackFrame(Math.min(s + 32, maxDistance), maxDistance);
-      const g = new THREE.BoxGeometry(0.8, 2.2, Math.hypot(b.x - a.x, b.z - a.z) + 2);
-      const yaw = Math.atan2(b.x - a.x, b.z - a.z);
-      g.rotateY(yaw);
-      g.translate((a.x + b.x) / 2 + a.nx * 9, 0.6, (a.z + b.z) / 2 + a.nz * 9);
+    for (const row of rows) {
+      const g = new THREE.BoxGeometry(7, 1.4, 130);
+      g.translate(standX + row.off, row.y, 0);
       stepGeos.push(g);
+    }
+    const wall = new THREE.BoxGeometry(1, 2.4, 132);
+    wall.translate(standX - 4.5, 0.7, 0);
+    stepGeos.push(wall);
+    for (let z = -60; z <= 60; z += 3) {
+      for (const row of rows) {
+        seats.push({ x: standX + row.off, y: row.y + 1.7, z });
+      }
     }
     const steps = mergeGeometries(stepGeos) ?? new THREE.BoxGeometry(1, 1, 1);
     return { steps, seats };
@@ -379,7 +355,7 @@ function Grandstand({ maxDistance }: { readonly maxDistance: number }) {
     const rand = mulberry32(99);
     data.seats.forEach((s, i) => {
       dummy.position.set(s.x, s.y, s.z);
-      dummy.rotation.set(0, s.yaw, 0);
+      dummy.rotation.set(0, -Math.PI / 2, 0);
       dummy.scale.setScalar(0.85 + rand() * 0.3);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
