@@ -7,9 +7,8 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
 import RatSwarm, { liveSpots } from "@/components/RatSwarm";
-import RatCard from "@/components/RatCard";
-import Leaderboard from "@/components/Leaderboard";
-import RegisterPanel, { loadCustomRats } from "@/components/RegisterPanel";
+import RaceHud from "@/components/RaceHud";
+import { loadCustomRats } from "@/components/RegisterPanel";
 import StoryProps from "@/components/StoryProps";
 import Trackside from "@/components/Trackside";
 import { useRace } from "@/store/race";
@@ -462,7 +461,6 @@ export default function RaceScene() {
   const world = useRef<THREE.Group>(null);
   const rats = useRace((s) => s.rats);
   const setRats = useRace((s) => s.setRats);
-  const requestView = useRace((s) => s.requestView);
   const viewName = useRace((s) => s.viewName);
   const selected = useRace((s) => s.selected);
   const followActive = selected !== null || viewName === "rat";
@@ -563,55 +561,7 @@ export default function RaceScene() {
           zoomSpeed={1.1}
         />
       </Canvas>
-      <div className="absolute left-4 top-4 max-h-[calc(100vh-2rem)] w-64 overflow-y-auto rounded-2xl border border-white/10 bg-black/60 p-4 backdrop-blur-md">
-        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.3em] text-cheese">
-          join the race
-        </p>
-        <RegisterPanel />
-        <div className="my-3 border-t border-white/10" />
-        <Leaderboard />
-      </div>
-      <div className="absolute right-4 top-4 flex gap-2">
-        <a
-          className="rounded-full border border-white/15 bg-black/60 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white/70 backdrop-blur-md transition-colors hover:border-cheese hover:text-cheese"
-          href="/"
-        >
-          ← home
-        </a>
-        {(
-          [
-            ["galaxy", "galaxy"],
-            ["pits", "pits"],
-            ["rat", "rat cam"],
-          ] as const
-        ).map(([name, label]) => (
-          <button
-            key={name}
-            className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-widest backdrop-blur-md transition-colors ${
-              viewName === name
-                ? "border-cheese bg-cheese/15 text-cheese"
-                : "border-white/15 bg-black/60 text-white/70 hover:border-cheese hover:text-cheese"
-            }`}
-            onClick={() => requestView(name)}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="absolute bottom-4 right-4">
-        <RatCard />
-      </div>
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, transparent 60%, rgba(10,20,40,0.28) 100%)",
-        }}
-      />
-      <p className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/80 backdrop-blur-sm">
-        drag to orbit · scroll to zoom · click a rat
-      </p>
+      <RaceHud />
     </div>
   );
 }
