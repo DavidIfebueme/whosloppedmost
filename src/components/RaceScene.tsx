@@ -13,6 +13,7 @@ import RegisterPanel, { loadCustomRats } from "@/components/RegisterPanel";
 import StoryProps from "@/components/StoryProps";
 import Trackside from "@/components/Trackside";
 import { useRace } from "@/store/race";
+import { circuitStrip } from "@/components/CircuitGeometry";
 
 interface RatDatum {
   readonly handle: string;
@@ -24,15 +25,7 @@ interface RatDatum {
 
 function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
   const geometry = useMemo(() => {
-    const samples = 600;
-    const pts: Array<THREE.Vector3> = [];
-    for (let i = 0; i <= samples; i += 1) {
-      const s = (i / samples) * maxDistance;
-      const p = pointAt(s);
-      pts.push(new THREE.Vector3(p.x, p.y, p.z));
-    }
-    const curve = new THREE.CatmullRomCurve3(pts);
-    return new THREE.TubeGeometry(curve, 600, 3, 8, false);
+    return circuitStrip(maxDistance, -3.8, 3.8, 0.08);
   }, [maxDistance]);
 
   useEffect(() => {
@@ -44,9 +37,9 @@ function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
   return (
     <mesh geometry={geometry} receiveShadow castShadow>
       <meshStandardMaterial
-        color="#33373c"
-        roughness={0.95}
-        metalness={0}
+        color="#18262e"
+        roughness={0.62}
+        metalness={0.15}
       />
     </mesh>
   );
@@ -65,7 +58,7 @@ function curbTexture(): THREE.CanvasTexture {
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
-  tex.repeat.set(160, 1);
+  tex.repeat.set(0.25, 1);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
@@ -89,8 +82,8 @@ function Curbs({ maxDistance }: { readonly maxDistance: number }) {
       right.push(new THREE.Vector3(p.x - nx, 0.35, p.z - nz));
     }
     return [
-      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(left), 500, 0.55, 6, false),
-      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(right), 500, 0.55, 6, false),
+      circuitStrip(maxDistance, -4.25, -3.8, 0.1),
+      circuitStrip(maxDistance, 3.8, 4.25, 0.1),
     ];
   }, [maxDistance]);
 
@@ -134,9 +127,9 @@ function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
           ),
         );
       }
-      return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 400, 0.14, 5, false);
+      return circuitStrip(maxDistance, off - 0.065, off + 0.065, 0.11);
     };
-    return [mk(2.55), mk(-2.55)];
+    return [mk(3.4), mk(-3.4)];
   }, [maxDistance]);
 
   useEffect(() => {
@@ -168,7 +161,8 @@ function GuideLight({ maxDistance }: { readonly maxDistance: number }) {
       pts.push(new THREE.Vector3(p.x, p.y + 3.4, p.z));
     }
     const curve = new THREE.CatmullRomCurve3(pts);
-    return new THREE.TubeGeometry(curve, 400, 0.28, 6, false);
+    void curve;
+    return circuitStrip(maxDistance, -4.38, -4.31, 0.12);
   }, [maxDistance]);
 
   useEffect(() => {
@@ -179,7 +173,7 @@ function GuideLight({ maxDistance }: { readonly maxDistance: number }) {
 
   return (
     <mesh geometry={geometry}>
-      <meshBasicMaterial color="#ffffff" toneMapped={false} />
+      <meshBasicMaterial color="#f4c078" toneMapped={false} />
     </mesh>
   );
 }
