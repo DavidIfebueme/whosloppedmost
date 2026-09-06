@@ -36,7 +36,7 @@ export default function Leaderboard() {
           verified · {live.length}
         </p>
         <ol className="flex flex-col gap-1">
-          {live.slice(0, 10).map((rat, i) => {
+          {live.map((rat, i) => {
             const active = selected === rat.handle;
             return (
               <li key={rat.handle}>
@@ -80,7 +80,7 @@ export default function Leaderboard() {
             quarantine · {stale.length}
           </p>
           <ul className="flex flex-col gap-1">
-            {stale.slice(0, 6).map((rat) => (
+            {stale.map((rat) => (
               <li
                 key={rat.handle}
                 className="flex items-center justify-between rounded-lg px-2 py-1 text-white/40"

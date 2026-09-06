@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { isRatDatum } from "@/components/RegisterPanel";
 
 interface BoardRat { handle: string; mergedPrs: number; laps: number; stale: boolean }
 
@@ -16,7 +17,7 @@ export default function HomePage() {
       .then(async (res) => {
         if (!res.ok) throw new Error("Board unavailable");
         const body = await res.json();
-        if (!Array.isArray(body.rats)) throw new Error("Invalid board");
+        if (!Array.isArray(body.rats) || !body.rats.every(isRatDatum)) throw new Error("Invalid board");
         setRats([...body.rats].sort((a: BoardRat, b: BoardRat) => b.mergedPrs - a.mergedPrs));
         setStatus("ready");
       })
