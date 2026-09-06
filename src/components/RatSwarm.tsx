@@ -231,11 +231,12 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
     }
   }, [rats]);
 
-  useFrame(() => {
+  useFrame(({ camera }) => {
     const m = mesh.current;
     if (m === null || rats.length === 0) {
       return;
     }
+    m.visible = camera.position.length() <= LOD_DISTANCE;
     const t = simulationTime;
     rats.forEach((rat, i) => {
       const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
@@ -340,7 +341,13 @@ function RatDots({ loopLength }: { readonly loopLength: number }) {
   });
 
   return (
-    <points ref={points} geometry={geometry} frustumCulled={false}>
+    <points ref={points} geometry={geometry} frustumCulled={false} onClick={(event) => {
+      const rat = event.index === undefined ? undefined : rats[event.index];
+      if (rat) {
+        event.stopPropagation();
+        useRace.getState().setSelected(rat.handle);
+      }
+    }}>
       <pointsMaterial size={6} vertexColors sizeAttenuation />
     </points>
   );
