@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, OrbitControls, Sky } from "@react-three/drei";
+import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
@@ -14,6 +14,7 @@ import StoryProps from "@/components/StoryProps";
 import Trackside from "@/components/Trackside";
 import { useRace } from "@/store/race";
 import { circuitStrip } from "@/components/CircuitGeometry";
+import DuskArena from "@/components/DuskArena";
 
 interface RatDatum {
   readonly handle: string;
@@ -269,7 +270,7 @@ function OriginRebase({
       camera.position.set(p.x + 30, 22, p.z + 30);
       controls.target.set(p.x, 3, p.z);
     } else {
-      camera.position.set(120, 90, 120);
+      camera.position.set(142, 112, 154);
       controls.target.set(0, 0, 0);
     }
     controls.update();
@@ -355,8 +356,8 @@ function SunRig() {
     <directionalLight
       ref={light}
       castShadow
-      color="#fff2dd"
-      intensity={2.4}
+      color="#ffbf8a"
+      intensity={2.8}
       shadow-mapSize-width={2048}
       shadow-mapSize-height={2048}
       shadow-camera-left={-170}
@@ -405,7 +406,7 @@ function Cheese() {
   });
   return (
     <group>
-      <group ref={ref} position={[0, 44, 0]}>
+      <group ref={ref} position={[0, 21, 0]}>
         <mesh position={[0, -6, 0]}>
           <cylinderGeometry args={[7, 9, 2, 16]} />
           <meshStandardMaterial color="#e8e4d8" roughness={0.9} />
@@ -420,7 +421,7 @@ function Cheese() {
           />
         </mesh>
       </group>
-      <pointLight position={[0, 50, 0]} intensity={900} distance={600} color="#ffd84d" />
+      <pointLight position={[0, 26, 0]} intensity={450} distance={70} color="#ffd19b" />
     </group>
   );
 }
@@ -434,7 +435,7 @@ function Ground() {
     if (ctx !== null) {
       // mowed outfield stripes
       for (let ring = 0; ring < 8; ring += 1) {
-        ctx.fillStyle = ring % 2 === 0 ? "#5d8a48" : "#548040";
+        ctx.fillStyle = ring % 2 === 0 ? "#203835" : "#1c302e";
         ctx.beginPath();
         ctx.arc(256, 256, 256 - ring * 32, 0, Math.PI * 2);
         ctx.fill();
@@ -488,6 +489,12 @@ function Ground() {
 }
 
 export default function RaceScene() {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const update = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
   const world = useRef<THREE.Group>(null);
   const rats = useRace((s) => s.rats);
   const setRats = useRace((s) => s.setRats);
@@ -532,22 +539,18 @@ export default function RaceScene() {
     <div className="relative h-screen w-screen bg-void">
       <Canvas
         shadows
-        camera={{ position: [120, 90, 120], fov: 55, near: 0.5, far: 20000 }}
+        frameloop={visible ? "always" : "never"}
+        fallback={<div className="p-8 text-white">Your browser cannot display the 3D circuit. Try a browser with WebGL enabled.</div>}
+        camera={{ position: [142, 112, 154], fov: 48, near: 0.5, far: 4000 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, logarithmicDepthBuffer: true }}
         onCreated={({ gl }) => {
-          gl.toneMappingExposure = 1.0;
+          gl.toneMappingExposure = 1.15;
         }}
       >
-        <color attach="background" args={["#87b5e0"]} />
-        <fog attach="fog" args={["#cfe0f0", 500, 6000]} />
-        <Sky
-          distance={45000}
-          sunPosition={[120, 60, -80]}
-          turbidity={6}
-          rayleigh={1.8}
-        />
-        <hemisphereLight args={["#bcd8ff", "#5a7a4a", 0.7]} />
+        <color attach="background" args={["#101e2c"]} />
+        <fog attach="fog" args={["#263c4b", 200, 850]} />
+        <hemisphereLight args={["#a9cbe6", "#24342d", 1.4]} />
         <SunRig />
         <Environment resolution={256}>
           <group rotation={[-Math.PI / 3, 0, 0]}>
@@ -573,6 +576,7 @@ export default function RaceScene() {
         </Environment>
         <group ref={world}>
           <Ground />
+          <DuskArena maxDistance={maxDistance} />
           <TrackRibbon maxDistance={maxDistance} />
           <Curbs maxDistance={maxDistance} />
           <EdgeLines maxDistance={maxDistance} />
@@ -590,7 +594,8 @@ export default function RaceScene() {
           enableDamping
           dampingFactor={0.08}
           minDistance={8}
-          maxDistance={4000}
+          maxDistance={900}
+          maxPolarAngle={Math.PI / 2.12}
           zoomSpeed={1.1}
         />
       </Canvas>
