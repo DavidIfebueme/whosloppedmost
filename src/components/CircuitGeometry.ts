@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { pointAt } from "@/lib/spiral";
+import { pointAt } from "../lib/spiral";
 
 /** An upward-facing strip measured along the spiral, with distance-based UVs. */
 export function circuitStrip(distance: number, inner: number, outer: number, height: number) {
@@ -25,7 +25,7 @@ export function circuitStrip(distance: number, inner: number, outer: number, hei
     }
     if (i < segments) {
       const a = i * 2;
-      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+      indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
     }
     previous = p;
   }
