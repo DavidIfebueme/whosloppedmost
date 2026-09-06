@@ -82,7 +82,8 @@ export default function RegisterPanel() {
         setError("bad response, try again");
         return;
       }
-      setRats([...rats, body.rat]);
+      const latest = useRace.getState().rats;
+      setRats([...latest.filter((rat) => rat.handle !== body.rat.handle), body.rat]);
       rememberCustomRat(body.rat);
       setValue("");
     } catch {
@@ -97,7 +98,11 @@ export default function RegisterPanel() {
       <div className="flex gap-2">
         <input
           aria-label="github handle"
-          className="w-40 rounded-full border border-white/20 bg-black/50 px-4 py-2 text-sm outline-none placeholder:text-white/30 focus:border-cheese"
+          className="min-w-0 flex-1 rounded-md border border-white/20 bg-black/30 px-3 py-3 text-sm outline-none placeholder:text-white/50 focus:border-cheese"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          maxLength={39}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -108,7 +113,7 @@ export default function RegisterPanel() {
           value={value}
         />
         <button
-          className="rounded-full bg-cheese px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+          className="rounded-md bg-[#f7bd78] px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
           disabled={busy}
           onClick={() => void submit()}
           type="button"
@@ -116,7 +121,7 @@ export default function RegisterPanel() {
           {busy ? "…" : "join"}
         </button>
       </div>
-      {error !== "" && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {error !== "" && <p role="alert" className="mt-2 text-xs text-red-300">{error}</p>}
     </div>
   );
 }
