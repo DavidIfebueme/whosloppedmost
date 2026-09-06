@@ -1,242 +1,63 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
-interface BoardRat {
-  readonly handle: string;
-  readonly mergedPrs: number;
-  readonly laps: number;
-  readonly stale: boolean;
-}
-
-const MARQUEE = [
-  "VELOCITY IS VIRTUE",
-  "MERGED PRS = MEANING",
-  "SHIP OR VANISH",
-  "REST IS RUST",
-  "THE WHEEL LOVES YOU",
-  "ZERO STILL COUNTS",
-];
-
-function barWidth(prs: number, max: number): number {
-  if (max <= 0 || prs <= 0) {
-    return 2;
-  }
-  const w = (Math.log10(1 + prs) / Math.log10(1 + max)) * 100;
-  return Math.max(2, Math.round(w));
-}
+interface BoardRat { handle: string; mergedPrs: number; laps: number; stale: boolean }
 
 export default function HomePage() {
-  const [rats, setRats] = useState<ReadonlyArray<BoardRat>>([]);
-  const [failed, setFailed] = useState(false);
-
+  const [rats, setRats] = useState<BoardRat[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    let alive = true;
-    fetch("/api/rats")
-      .then((res) => res.json() as Promise<{ rats: ReadonlyArray<BoardRat> }>)
-      .then((body) => {
-        if (alive) {
-          setRats(
-            [...body.rats].sort((a, b) => b.mergedPrs - a.mergedPrs),
-          );
-        }
+    const controller = new AbortController();
+    setStatus("loading");
+    fetch("/api/rats", { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Board unavailable");
+        const body = await res.json();
+        if (!Array.isArray(body.rats)) throw new Error("Invalid board");
+        setRats([...body.rats].sort((a: BoardRat, b: BoardRat) => b.mergedPrs - a.mergedPrs));
+        setStatus("ready");
       })
-      .catch(() => {
-        if (alive) {
-          setFailed(true);
-        }
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
+      .catch(() => { if (!controller.signal.aborted) setStatus("error"); });
+    return () => controller.abort();
+  }, [attempt]);
   const live = rats.filter((r) => !r.stale);
-  const first: BoardRat | undefined = live[0];
-  const max = first?.mergedPrs ?? 0;
-  const leader: BoardRat | null = first ?? null;
+  const total = live.reduce((sum, r) => sum + r.mergedPrs, 0);
 
   return (
-    <main className="min-h-screen bg-[#f3efe4] text-[#17150f] antialiased">
-      <header className="flex items-center justify-between border-b border-black/10 px-5 py-3 sm:px-8">
-        <p className="text-xs font-bold uppercase tracking-[0.3em]">
-          who slopped the most
-        </p>
-        <div className="flex items-center gap-3">
-          <p className="font-mono text-[11px] tabular-nums text-black/50">
-            {failed
-              ? "board offline"
-              : live.length > 0
-                ? `${live.length} rats tracked`
-                : "counting rats…"}
-          </p>
-          <a
-            className="rounded-full bg-[#d8352c] px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-transform active:scale-95"
-            href="/race"
-          >
-            enter
-          </a>
-        </div>
+    <main className="home-shell">
+      <header className="site-header">
+        <Link href="/" className="wordmark" aria-label="Who slopped most home"><span className="brand-icon">w<span>↗</span></span><span>who slopped<span className="wordmark-light">most.</span></span></Link>
+        <nav aria-label="Main navigation"><a href="#standings">Standings</a><a href="#method">The rules</a><Link href="/race" className="nav-enter">Enter the race <span>↗</span></Link></nav>
       </header>
-
-      <section className="grid gap-10 px-5 pb-16 pt-12 sm:px-8 lg:grid-cols-[1.2fr_1fr] lg:pt-20">
-        <div>
-          <p className="mb-4 font-mono text-xs uppercase tracking-[0.3em] text-[#d8352c]">
-            an extremely serious productivity leaderboard
-          </p>
-          <h1
-            className="max-w-xl text-5xl font-black uppercase leading-[0.95] tracking-tight sm:text-7xl"
-            style={{ textWrap: "balance" }}
-          >
-            everyone is sprinting. nobody is moving.
-          </h1>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-black/60">
-            Real merged PR counts from public GitHub profiles, converted into
-            distance along an endless spiral track. The running is real. The
-            progress is not.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <a
-              className="rounded-full bg-[#d8352c] px-6 py-3 text-sm font-bold uppercase tracking-widest text-white transition-transform active:scale-95"
-              href="/race"
-            >
-              watch the race
-            </a>
-            <a
-              className="rounded-full border border-black/20 px-6 py-3 text-sm font-bold uppercase tracking-widest text-black/80 transition-colors hover:border-[#d8352c] hover:text-[#d8352c]"
-              href="#method"
-            >
-              how it works
-            </a>
-          </div>
+      <section className="race-hero">
+        <div className="hero-image" role="img" aria-label="The spiral race circuit under evening floodlights" />
+        <div className="hero-shade" />
+        <div className="hero-content">
+          <p className="eyebrow"><span className="status-dot" /> THE INTERNET'S RAT RACE</p>
+          <h1>All that shipping.<br />Still <em>nowhere.</em></h1>
+          <p className="hero-description">Real developers. Real merged PRs. An endless race for a piece of cheese. Welcome to the productivity industrial complex.</p>
+          <div className="hero-actions"><Link href="/race" className="primary-action">Watch the race <span>↗</span></Link><Link href="/race?join=1" className="text-action">Put your rat on the track <span>→</span></Link></div>
+          <div className="hero-proof"><span className="tiny-track">◎</span><span>Powered by public GitHub data.<br /><strong>Absolutely no finish line.</strong></span></div>
         </div>
-
-        <div className="flex flex-col justify-end border-l-2 border-[#d8352c]/70 pl-6">
-          <p className="font-mono text-xs uppercase tracking-[0.3em] text-black/40">
-            distance from start
-          </p>
-          <p
-            className="font-mono font-bold tabular-nums leading-none"
-            style={{ fontSize: "clamp(6rem, 18vw, 13rem)" }}
-          >
-            0<span className="text-[#d8352c]">m</span>
-          </p>
-          <p className="mt-2 max-w-xs text-sm text-black/50">
-            {leader !== null
-              ? `${leader.handle} has run ${leader.mergedPrs.toLocaleString()} merged PRs and arrived exactly here.`
-              : "The leader has lapped the spiral and arrived exactly here."}
-          </p>
-        </div>
+        <div className="circuit-caption"><span className="crosshair">+</span><div>THE INFINITE CIRCUIT<span>Spiral layout · open season</span></div><span className="caption-coordinate">NO FINISH LINE ↗</span></div>
       </section>
-
-      <div className="overflow-hidden border-y border-[#d8352c] bg-[#d8352c] py-2">
-        <div className="flex w-max animate-[marquee_28s_linear_infinite] gap-10 whitespace-nowrap">
-          {[...MARQUEE, ...MARQUEE].map((line, i) => (
-            <span
-              key={i}
-              className="text-xs font-black uppercase tracking-[0.25em] text-white"
-            >
-              {line} ·
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <section className="px-5 py-14 sm:px-8">
-        <div className="mb-6 flex items-baseline justify-between">
-          <h2 className="text-xl font-black uppercase tracking-tight">
-            current runners
-          </h2>
-          <a
-            className="font-mono text-xs uppercase tracking-widest text-[#d8352c] hover:underline"
-            href="/race"
-          >
-            see them run →
-          </a>
-        </div>
-        {live.length === 0 ? (
-          <p className="font-mono text-sm text-black/40">
-            {failed
-              ? "the board fell off the wheel. reload to try again."
-              : "counting rats…"}
-          </p>
-        ) : (
-          <ol className="divide-y divide-black/10 border-y border-black/10">
-            {live.slice(0, 8).map((rat, i) => (
-              <li
-                key={rat.handle}
-                className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-3"
-              >
-                <span className="font-mono text-sm tabular-nums text-black/35">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span>
-                  <span className="block text-sm font-bold">
-                    {rat.handle}
-                    {rat.laps > 0 && (
-                      <span className="ml-2 rounded-full bg-[#d8352c]/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-[#d8352c]">
-                        lap {rat.laps}
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-black/10">
-                    <span
-                      className="block h-full rounded-full bg-[#d8352c]"
-                      style={{ width: `${barWidth(rat.mergedPrs, max)}%` }}
-                    />
-                  </span>
-                </span>
-                <span className="font-mono text-sm tabular-nums text-black/70">
-                  {rat.mergedPrs.toLocaleString()}
-                  <span className="ml-1 text-[10px] uppercase text-black/35">
-                    prs
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
+      <section className="race-strip" aria-label="Race statistics"><div><span className="status-dot" /><span>THE RACE GOES ON</span></div><p><strong>{status === "ready" ? live.length : "—"}</strong> runners on track</p><p><strong>{status === "ready" ? total.toLocaleString() : "—"}</strong> merged PRs</p><p><strong>0</strong> destinations reached</p><Link href="/race">Trackside view ↗</Link></section>
+      <section className="standings-section" id="standings">
+        <div className="section-heading"><div><p className="eyebrow">A VERY SERIOUS LEADERBOARD</p><h2>The usual <em>suspects.</em></h2></div><p>More merged PRs. More track.<br />Same existential outcome.</p></div>
+        <div className="standings-layout"><div className="standings-board">
+          <div className="board-heading"><span>THE RUNNING ORDER</span><span>MERGED PRS · LAST 12 MONTHS</span></div>
+          {status === "loading" && <div className="board-state" role="status">Fetching the running order…</div>}
+          {status === "error" && <div className="board-state" role="alert">The board is unavailable. <button onClick={() => setAttempt((n) => n + 1)}>Try again ↗</button></div>}
+          {status === "ready" && live.length === 0 && <div className="board-state">No verified runners yet. <Link href="/race?join=1">Be the first to join ↗</Link></div>}
+          <ol>{live.slice(0, 8).map((rat, index) => <li key={rat.handle}><Link href={`/race?select=${encodeURIComponent(rat.handle)}`} className="standing-row"><span className="standing-rank">{String(index + 1).padStart(2, "0")}</span><span className={`runner-avatar avatar-${index % 4}`}>{rat.handle.slice(0, 2).toUpperCase()}</span><span className="runner-name">{rat.handle}<span>{index === 0 ? "Setting the pace" : rat.laps > 0 ? `${rat.laps} laps. Still here.` : "On the wheel"}</span></span><span className="runner-count">{rat.mergedPrs.toLocaleString()}<span>MERGED PRS</span></span><span className="runner-arrow">↗</span></Link></li>)}</ol>
+          <Link href="/race" className="board-footer">Meet everyone on the track <span>→</span></Link>
+        </div><aside className="join-card"><div className="cheese-symbol" aria-hidden="true">◒</div><p className="eyebrow">YOUR NEXT QUESTIONABLE DECISION</p><h3>Got commits?<br />Get in.</h3><p>Your public GitHub handle is your entry ticket. We'll count the merged PRs and give you a rat. The ambition is on you.</p><Link href="/race?join=1" className="primary-action">Join the race <span>↗</span></Link><span className="join-note">No account. No wallet. Just a handle.</span></aside></div>
       </section>
-
-      <section id="method" className="border-t border-black/10 px-5 py-14 sm:px-8">
-        <h2 className="mb-8 text-xl font-black uppercase tracking-tight">
-          how it works
-        </h2>
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-black/10 bg-black/10 sm:grid-cols-3">
-          {[
-            {
-              t: "real output",
-              d: "Merged PRs from the last 12 months, pulled from public GitHub data. No self reported numbers.",
-            },
-            {
-              t: "log scaled",
-              d: "Counts are compressed logarithmically into track distance, so a 100x gap looks dramatic without breaking the layout.",
-            },
-            {
-              t: "farmed, not erased",
-              d: "Suspicious patterns get a public farmed badge and a seat in quarantine. Deleting numbers would ruin the joke.",
-            },
-          ].map((c) => (
-            <div key={c.t} className="bg-[#f3efe4] p-6">
-              <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-[#d8352c]">
-                {c.t}
-              </p>
-              <p className="text-sm leading-relaxed text-black/60">{c.d}</p>
-            </div>
-          ))}
-        </div>
-        <footer className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-6">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-black/35">
-            who slopped the most · a monument to velocity
-          </p>
-          <a
-            className="font-mono text-[11px] uppercase tracking-widest text-black/35 hover:text-[#d8352c]"
-            href="/race"
-          >
-            back to the track →
-          </a>
-        </footer>
-      </section>
+      <section className="method-section" id="method"><div className="section-heading"><div><p className="eyebrow">THE RULES OF THE RAT RACE</p><h2>Output goes up.<br /><em>Meaning sold separately.</em></h2></div></div><div className="method-grid"><article><span className="method-symbol">↗</span><h3>Ship something.</h3><p>We count merged pull requests from your public GitHub activity over the last 12 months. Real numbers, pulled from the source.</p></article><article><span className="method-symbol">◎</span><h3>Run in circles.</h3><p>Your PR count sets your distance on a logarithmic spiral. Big numbers get room to run. Nobody gets an exit.</p></article><article><span className="method-symbol">⚑</span><h3>Keep it honest.</h3><p>Suspicious patterns get flagged for everyone to see. Unverified runners sit in quarantine. The numbers stay on the board.</p></article></div></section>
+      <footer className="site-footer"><Link href="/" className="wordmark">who slopped most.</Link><p>A monument to motion without progress.</p><Link href="/race">See you on the wheel ↗</Link></footer>
     </main>
   );
 }
