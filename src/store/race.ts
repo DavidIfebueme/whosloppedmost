@@ -11,6 +11,8 @@ export interface RatDatum {
 export type CameraView = "galaxy" | "pits" | "rat";
 
 interface RaceState {
+  readonly loadStatus: "loading" | "ready" | "error";
+  readonly setLoadStatus: (status: "loading" | "ready" | "error") => void;
   readonly paused: boolean;
   readonly setPaused: (paused: boolean) => void;
   readonly rats: ReadonlyArray<RatDatum>;
@@ -25,6 +27,8 @@ interface RaceState {
 }
 
 export const useRace = create<RaceState>()((set) => ({
+  loadStatus: "loading",
+  setLoadStatus: (loadStatus) => set({ loadStatus }),
   paused: false,
   setPaused: (paused) => set({ paused }),
   rats: [],

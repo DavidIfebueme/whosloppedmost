@@ -5,16 +5,16 @@ import { useRace, type RatDatum } from "@/store/race";
 
 const STORAGE_KEY = "whoslop-custom";
 
-function isRatDatum(value: unknown): value is RatDatum {
+export function isRatDatum(value: unknown): value is RatDatum {
   if (typeof value !== "object" || value === null) {
     return false;
   }
   const v = value as Record<string, unknown>;
   return (
     typeof v["handle"] === "string" &&
-    typeof v["mergedPrs"] === "number" &&
-    typeof v["distance"] === "number" &&
-    typeof v["laps"] === "number" &&
+    typeof v["mergedPrs"] === "number" && Number.isFinite(v["mergedPrs"]) && v["mergedPrs"] >= 0 &&
+    typeof v["distance"] === "number" && Number.isFinite(v["distance"]) && v["distance"] >= 0 &&
+    typeof v["laps"] === "number" && Number.isFinite(v["laps"]) && v["laps"] >= 0 &&
     typeof v["stale"] === "boolean"
   );
 }

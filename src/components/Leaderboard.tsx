@@ -15,6 +15,7 @@ function barWidth(prs: number, max: number): number {
 
 export default function Leaderboard() {
   const rats = useRace((s) => s.rats);
+  const status = useRace((s) => s.loadStatus);
   const selected = useRace((s) => s.selected);
   const setSelected = useRace((s) => s.setSelected);
 
@@ -27,6 +28,9 @@ export default function Leaderboard() {
 
   return (
     <div className="flex flex-col gap-4">
+      {status === "loading" && <p role="status" className="text-xs text-slate-300">Fetching the running order…</p>}
+      {status === "error" && <p role="alert" className="text-xs text-orange-200">The board is unavailable. <button className="underline" onClick={() => window.location.reload()}>Reload to retry</button></p>}
+      {status === "ready" && rats.length === 0 && <p className="text-xs text-slate-300">No runners yet. Choose Get a rat to join.</p>}
       <div>
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.3em] text-white/40">
           verified · {live.length}

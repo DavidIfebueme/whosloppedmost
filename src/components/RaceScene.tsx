@@ -8,7 +8,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
 import RatSwarm, { liveSpots } from "@/components/RatSwarm";
 import RaceHud from "@/components/RaceHud";
-import { loadCustomRats } from "@/components/RegisterPanel";
+import { isRatDatum, loadCustomRats } from "@/components/RegisterPanel";
 import StoryProps from "@/components/StoryProps";
 import Trackside from "@/components/Trackside";
 import { useRace } from "@/store/race";
@@ -490,19 +490,27 @@ export default function RaceScene() {
 
   useEffect(() => {
     let alive = true;
+    useRace.getState().setLoadStatus("loading");
     fetch("/api/rats")
-      .then((res) => res.json() as Promise<{ rats: ReadonlyArray<RatDatum> }>)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Board unavailable");
+        const body = await res.json() as { rats: ReadonlyArray<RatDatum> };
+        if (!Array.isArray(body.rats) || !body.rats.every(isRatDatum)) throw new Error("Invalid board");
+        return body;
+      })
       .then((body) => {
         if (alive) {
           const customs = loadCustomRats().filter(
             (c) => !body.rats.some((r) => r.handle === c.handle),
           );
           setRats([...body.rats, ...customs]);
+          useRace.getState().setLoadStatus("ready");
         }
       })
       .catch(() => {
         if (alive) {
-          setRats([]);
+          setRats(loadCustomRats());
+          useRace.getState().setLoadStatus("error");
         }
       });
     return () => {
