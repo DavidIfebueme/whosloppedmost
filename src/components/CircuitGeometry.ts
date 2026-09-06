@@ -10,9 +10,11 @@ export function circuitStrip(distance: number, inner: number, outer: number, hei
   let travelled = 0;
   let previous = pointAt(0);
   for (let i = 0; i <= segments; i++) {
-    const s = distance * i / segments;
+    // The spiral angle grows with sqrt(distance), so sample angle uniformly.
+    // Uniform distance sampling leaves a visible polygon at the starting grid.
+    const s = distance * (i / segments) ** 2;
     const p = pointAt(s);
-    const ahead = pointAt(s + 0.1);
+    const ahead = pointAt(s + 0.001);
     const dx = ahead.x - p.x;
     const dz = ahead.z - p.z;
     const length = Math.hypot(dx, dz) || 1;
