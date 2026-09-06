@@ -360,7 +360,7 @@ function Cheese() {
   }, [trophy]);
 
   useFrame((_, delta) => {
-    if (ref.current !== null) {
+    if (ref.current !== null && !useRace.getState().paused) {
       ref.current.rotation.y += delta * 0.4;
     }
   });
@@ -449,8 +449,12 @@ function Ground() {
 }
 
 export default function RaceScene() {
+  const paused = useRace((s) => s.paused);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      useRace.getState().setPaused(true);
+    }
     const update = () => setVisible(!document.hidden);
     document.addEventListener("visibilitychange", update);
     return () => document.removeEventListener("visibilitychange", update);
@@ -499,7 +503,7 @@ export default function RaceScene() {
     <div className="relative h-screen w-screen bg-void">
       <Canvas
         shadows
-        frameloop={visible ? "always" : "never"}
+        frameloop={visible ? paused ? "demand" : "always" : "never"}
         fallback={<div className="p-8 text-white">Your browser cannot display the 3D circuit. Try a browser with WebGL enabled.</div>}
         camera={{ position: [142, 112, 154], fov: 48, near: 0.5, far: 4000 }}
         dpr={[1, 1.5]}

@@ -11,6 +11,14 @@ import { useRace } from "@/store/race";
 
 const LOD_DISTANCE = 900;
 const SKINNED_LIMIT = 40;
+let simulationTime = 0;
+
+function SimulationClock() {
+  useFrame((_, delta) => {
+    if (!useRace.getState().paused) simulationTime += Math.min(delta, 0.05);
+  }, -2);
+  return null;
+}
 
 export interface LiveSpot {
   x: number;
@@ -158,13 +166,13 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
     if (h !== null) {
       h.visible = camera.position.length() <= LOD_DISTANCE;
     }
-    const t = performance.now() / 1000;
+    const t = simulationTime;
     rats.forEach((rat, i) => {
       const runner = runners[i];
       if (runner === undefined) {
         return;
       }
-      if (h?.visible) runner.mixer?.update(Math.min(delta, 0.05));
+      if (h?.visible && !useRace.getState().paused) runner.mixer?.update(Math.min(delta, 0.05));
       const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
       const s = (rat.distance + t * speed) % loopLength;
       const p = pointAt(s);
@@ -228,7 +236,7 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
     if (m === null || rats.length === 0) {
       return;
     }
-    const t = performance.now() / 1000;
+    const t = simulationTime;
     rats.forEach((rat, i) => {
       const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
       const s = (rat.distance + t * speed) % loopLength;
@@ -321,7 +329,7 @@ function RatDots({ loopLength }: { readonly loopLength: number }) {
       return;
     }
     const pos = geometry.getAttribute("position") as THREE.BufferAttribute;
-    const t = performance.now() / 1000;
+    const t = simulationTime;
     rats.forEach((rat, i) => {
       const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
       const s = (rat.distance + t * speed) % loopLength;
@@ -347,6 +355,7 @@ export default function RatSwarm({
   const useSkinned = rats.length <= SKINNED_LIMIT;
   return (
     <group>
+      <SimulationClock />
       {useSkinned ? (
         <ModelBoundary fallback={<InstancedFallback loopLength={loopLength} />}>
           <Suspense fallback={<InstancedFallback loopLength={loopLength} />}>

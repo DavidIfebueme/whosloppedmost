@@ -11,6 +11,8 @@ export interface RatDatum {
 export type CameraView = "galaxy" | "pits" | "rat";
 
 interface RaceState {
+  readonly paused: boolean;
+  readonly setPaused: (paused: boolean) => void;
   readonly rats: ReadonlyArray<RatDatum>;
   readonly setRats: (rats: ReadonlyArray<RatDatum>) => void;
   readonly selected: string | null;
@@ -23,6 +25,8 @@ interface RaceState {
 }
 
 export const useRace = create<RaceState>()((set) => ({
+  paused: false,
+  setPaused: (paused) => set({ paused }),
   rats: [],
   setRats: (rats) => set({ rats }),
   selected: null,
