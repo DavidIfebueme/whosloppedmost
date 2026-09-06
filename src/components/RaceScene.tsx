@@ -24,6 +24,26 @@ interface RatDatum {
 }
 
 function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
+  const asphalt = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 128;
+    const context = canvas.getContext("2d");
+    if (context) {
+      const pixels = context.createImageData(128, 128);
+      for (let i = 0; i < pixels.data.length; i += 4) {
+        const grain = 125 + ((Math.imul(i + 11, 16807) >>> 9) % 48);
+        pixels.data[i] = grain;
+        pixels.data[i + 1] = grain;
+        pixels.data[i + 2] = grain;
+        pixels.data[i + 3] = 255;
+      }
+      context.putImageData(pixels, 0, 0);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.anisotropy = 4;
+    return texture;
+  }, []);
   const geometry = useMemo(() => {
     return circuitStrip(maxDistance, -3.8, 3.8, 0.08);
   }, [maxDistance]);
@@ -33,6 +53,7 @@ function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
       geometry.dispose();
     };
   }, [geometry]);
+  useEffect(() => () => asphalt.dispose(), [asphalt]);
 
   return (
     <mesh geometry={geometry} receiveShadow castShadow>
@@ -40,6 +61,8 @@ function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
         color="#18262e"
         roughness={0.62}
         metalness={0.15}
+        bumpMap={asphalt}
+        bumpScale={0.035}
       />
     </mesh>
   );
