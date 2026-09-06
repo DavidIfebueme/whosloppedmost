@@ -46,7 +46,7 @@ button:disabled { cursor: not-allowed; }
 .nav-enter span { margin-left: 24px; color: var(--accent); }
 .race-hero { min-height: 660px; position: relative; display: flex; align-items: center; overflow: hidden; }
 .hero-image, .hero-shade { position: absolute; inset: 0; }
-.hero-image { background: #233849 url('/images/circuit.jpg') center right / cover no-repeat; }
+.hero-image { background: #233849 url('/images/circuit.svg') center right / cover no-repeat; }
 .hero-shade { background: linear-gradient(90deg,#101820 0%,#101820f2 20%,#101820a8 43%,#10182000 75%),linear-gradient(0deg,#101820 0%,transparent 25%); }
 .hero-content { position: relative; padding: 65px 5% 100px; width: 100%; }
 .eyebrow { display: flex; align-items: center; gap: 9px; font-family: monospace; font-size: 10px; letter-spacing: 1.8px; font-weight: 500; color: var(--accent); }
