@@ -27,7 +27,7 @@ function Skyline({ radius }: { readonly radius: number }) {
         windows.push(window);
       }
     }
-    const result = [mergeGeometries(blocks)!, mergeGeometries(windows)!];
+    const result = [mergeGeometries(blocks)!, mergeGeometries(windows)!] as const;
     [...blocks, ...windows].forEach((g) => g.dispose());
     return result;
   }, [radius]);
