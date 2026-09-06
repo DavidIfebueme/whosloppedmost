@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -80,6 +80,7 @@ interface Runner {
   readonly mixer: THREE.AnimationMixer | null;
   readonly tag: THREE.Sprite;
   readonly tagTexture: THREE.CanvasTexture;
+  readonly groundOffset: number;
 }
 
 function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
@@ -92,9 +93,13 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
     return rats.map((rat, i) => {
       const group = cloneSkinned(gltf.scene) as THREE.Group;
       group.scale.setScalar(1.5);
+      group.userData.handle = rat.handle;
+      group.updateMatrixWorld(true);
+      const groundOffset = -new THREE.Box3().setFromObject(group).min.y;
       group.traverse((o) => {
         o.frustumCulled = false;
         if (o instanceof THREE.Mesh) {
+          o.castShadow = true;
           const mats = Array.isArray(o.material) ? o.material : [o.material];
           for (const mat of mats) {
             if (mat instanceof THREE.MeshStandardMaterial) {
@@ -126,7 +131,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       );
       tag.scale.set(11, 2.75, 1);
       group.add(tag);
-      return { group, mixer, tag, tagTexture };
+      return { group, mixer, tag, tagTexture, groundOffset };
     });
   }, [gltf, rats]);
 
@@ -159,31 +164,37 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       if (runner === undefined) {
         return;
       }
-      runner.mixer?.update(Math.min(delta, 0.05));
+      if (h?.visible) runner.mixer?.update(Math.min(delta, 0.05));
       const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
       const s = (rat.distance + t * speed) % loopLength;
       const p = pointAt(s);
-      const ahead = pointAt((s + 2) % loopLength);
+      const ahead = pointAt(s + 0.5);
       const yaw = Math.atan2(ahead.x - p.x, ahead.z - p.z);
-      const bob = Math.sin(t * 9 + i * 1.7) * 0.2;
-      runner.group.position.set(p.x, 3.0 + bob, p.z);
+      const bob = Math.sin(t * 9 + i * 1.7) * 0.06;
+      runner.group.position.set(p.x, 0.15 + runner.groundOffset + bob, p.z);
       runner.group.rotation.set(0, yaw, 0);
       const camDist = camera.position.distanceTo(runner.group.position);
       const mat = runner.tag.material as THREE.SpriteMaterial;
       mat.opacity = camDist > 1200 ? 0 : camDist > 500 ? 0.85 : 1;
       runner.tag.position.set(0, 7.5, 0);
       const alen = Math.hypot(ahead.x - p.x, ahead.z - p.z) || 1;
-      liveSpots[i] = {
-        x: p.x,
-        y: 3.0 + bob,
-        z: p.z,
-        tx: (ahead.x - p.x) / alen,
-        tz: (ahead.z - p.z) / alen,
-      };
+      const spot = liveSpots[i] ?? (liveSpots[i] = { x: 0, y: 0, z: 0, tx: 0, tz: 0 });
+      spot.x = p.x;
+      spot.y = 2;
+      spot.z = p.z;
+      spot.tx = (ahead.x - p.x) / alen;
+      spot.tz = (ahead.z - p.z) / alen;
     });
   });
 
-  return <group ref={holder} />;
+  return <group ref={holder} onClick={(event) => {
+    let object: THREE.Object3D | null = event.object;
+    while (object && typeof object.userData.handle !== "string") object = object.parent;
+    if (object) {
+      event.stopPropagation();
+      useRace.getState().setSelected(object.userData.handle as string);
+    }
+  }} />;
 }
 
 function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
@@ -222,22 +233,21 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
       const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
       const s = (rat.distance + t * speed) % loopLength;
       const p = pointAt(s);
-      const ahead = pointAt((s + 2) % loopLength);
+      const ahead = pointAt(s + 0.5);
       const yaw = Math.atan2(ahead.x - p.x, ahead.z - p.z);
       const bob = Math.sin(t * 10 + i * 1.7) * 0.25;
-      dummy.position.set(p.x, 3.2 + bob, p.z);
+      dummy.position.set(p.x, 0.15 + bob, p.z);
       dummy.rotation.set(0, yaw, Math.sin(t * 10 + i) * 0.06);
       dummy.scale.setScalar(1.3);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
       const alen = Math.hypot(ahead.x - p.x, ahead.z - p.z) || 1;
-      liveSpots[i] = {
-        x: p.x,
-        y: 3.2 + bob,
-        z: p.z,
-        tx: (ahead.x - p.x) / alen,
-        tz: (ahead.z - p.z) / alen,
-      };
+      const spot = liveSpots[i] ?? (liveSpots[i] = { x: 0, y: 0, z: 0, tx: 0, tz: 0 });
+      spot.x = p.x;
+      spot.y = 2;
+      spot.z = p.z;
+      spot.tx = (ahead.x - p.x) / alen;
+      spot.tz = (ahead.z - p.z) / alen;
     });
     m.instanceMatrix.needsUpdate = true;
   });
@@ -247,6 +257,13 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
       ref={mesh}
       args={[geometry, undefined, count]}
       frustumCulled={false}
+      onClick={(event) => {
+        const rat = event.instanceId === undefined ? undefined : rats[event.instanceId];
+        if (rat) {
+          event.stopPropagation();
+          useRace.getState().setSelected(rat.handle);
+        }
+      }}
     >
       <meshStandardMaterial
         flatShading
@@ -331,9 +348,11 @@ export default function RatSwarm({
   return (
     <group>
       {useSkinned ? (
-        <Suspense fallback={null}>
-          <SkinnedRats loopLength={loopLength} />
-        </Suspense>
+        <ModelBoundary fallback={<InstancedFallback loopLength={loopLength} />}>
+          <Suspense fallback={<InstancedFallback loopLength={loopLength} />}>
+            <SkinnedRats loopLength={loopLength} />
+          </Suspense>
+        </ModelBoundary>
       ) : (
         <InstancedFallback loopLength={loopLength} />
       )}
@@ -342,4 +361,8 @@ export default function RatSwarm({
   );
 }
 
-useGLTF.preload("/models/rat.glb");
+class ModelBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
