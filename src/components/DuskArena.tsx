@@ -1,25 +1,41 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { spiralRadius } from "@/lib/spiral";
 
 function Skyline({ radius }: { readonly radius: number }) {
-  const buildings = useMemo(() => Array.from({ length: 42 }, (_, i) => {
-    const angle = i / 42 * Math.PI * 2;
-    const height = 12 + ((i * 17) % 39);
-    return { x: Math.cos(angle) * radius, z: Math.sin(angle) * radius, angle, height };
-  }), [radius]);
-  return <group>{buildings.map((b, i) => <group key={i} position={[b.x, 0, b.z]} rotation={[0, -b.angle, 0]}>
-    <mesh position={[0, b.height / 2, 0]}>
-      <boxGeometry args={[9 + i % 4 * 3, b.height, 12]} />
-      <meshStandardMaterial color={i % 3 === 0 ? "#263642" : "#17232d"} roughness={0.72} metalness={0.3} />
-    </mesh>
-    {[0.28, 0.55, 0.82].map((level) => <mesh key={level} position={[0, b.height * level, 6.02]}>
-      <planeGeometry args={[7 + i % 4 * 3, 0.65]} />
-      <meshBasicMaterial color={i % 4 === 0 ? "#efbc7e" : "#6798ac"} />
-    </mesh>)}
-  </group>)}</group>;
+  const geometry = useMemo(() => {
+    const blocks: THREE.BufferGeometry[] = [];
+    const windows: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 42; i++) {
+      const angle = i / 42 * Math.PI * 2;
+      const height = 12 + ((i * 17) % 39);
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      const block = new THREE.BoxGeometry(9 + i % 4 * 3, height, 12);
+      block.translate(0, height / 2, 0);
+      block.rotateY(-angle);
+      block.translate(x, 0, z);
+      blocks.push(block);
+      for (const level of [0.28, 0.55, 0.82]) {
+        const window = new THREE.BoxGeometry(7 + i % 4 * 3, 0.55, 12.05);
+        window.translate(0, height * level, 0);
+        window.rotateY(-angle);
+        window.translate(x, 0, z);
+        windows.push(window);
+      }
+    }
+    const result = [mergeGeometries(blocks)!, mergeGeometries(windows)!];
+    [...blocks, ...windows].forEach((g) => g.dispose());
+    return result;
+  }, [radius]);
+  useEffect(() => () => geometry.forEach((g) => g.dispose()), [geometry]);
+  return <group>
+    <mesh geometry={geometry[0]}><meshStandardMaterial color="#172a36" roughness={0.72} metalness={0.3} /></mesh>
+    <mesh geometry={geometry[1]}><meshBasicMaterial color="#b9b7a1" /></mesh>
+  </group>;
 }
 
 export default function DuskArena({ maxDistance }: { readonly maxDistance: number }) {
