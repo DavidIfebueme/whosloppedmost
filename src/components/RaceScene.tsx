@@ -218,6 +218,8 @@ function OriginRebase({
   readonly world: React.RefObject<THREE.Group | null>;
 }) {
   const camera = useThree((s) => s.camera);
+  const invalidate = useThree((s) => s.invalidate);
+  const paused = useRace((s) => s.paused);
   const controls = useThree((s) =>
     s.controls as unknown as {
       target: THREE.Vector3;
@@ -233,6 +235,7 @@ function OriginRebase({
   const seenView = useRef(-1);
   const focus = useRef(new THREE.Vector3());
   const desiredPosition = useRef(new THREE.Vector3());
+  useEffect(() => invalidate(), [invalidate, selected, viewTick, resetCounter, paused, rats]);
 
   function applyView(controls: {
     target: THREE.Vector3;
@@ -244,7 +247,7 @@ function OriginRebase({
     } else if (viewName === "rat") {
       let best = 0;
       for (const r of rats) {
-        if (r.distance > best) {
+        if (!r.stale && r.distance > best) {
           best = r.distance;
         }
       }
@@ -274,20 +277,20 @@ function OriginRebase({
       const spot = idx >= 0 ? liveSpots[idx] : undefined;
       if (spot !== undefined) {
         focus.current.set(spot.x, spot.y, spot.z);
-        controls.target.lerp(focus.current, 0.08);
+        controls.target.lerp(focus.current, paused ? 1 : 0.08);
       } else if (idx >= 0) {
         const rat = rats[idx];
         if (rat !== undefined) {
           const p = pointAt(rat.distance);
           focus.current.set(p.x, 4, p.z);
-          controls.target.lerp(focus.current, 0.08);
+          controls.target.lerp(focus.current, paused ? 1 : 0.08);
         }
       }
     } else if (viewName === "rat") {
-      let bestIdx = 0;
+      let bestIdx = -1;
       let best = -1;
       rats.forEach((r, i) => {
-        if (r.distance > best) {
+        if (!r.stale && r.distance > best) {
           best = r.distance;
           bestIdx = i;
         }
@@ -295,15 +298,16 @@ function OriginRebase({
       const spot = liveSpots[bestIdx];
       if (spot !== undefined && rats.length > 0) {
         focus.current.set(spot.x + spot.tx * 6, spot.y, spot.z + spot.tz * 6);
-        controls.target.lerp(focus.current, 0.25);
+        controls.target.lerp(focus.current, paused ? 1 : 0.25);
         const want = desiredPosition.current.set(
           spot.x - spot.tx * 18,
           spot.y + 10,
           spot.z - spot.tz * 18,
         );
-        camera.position.lerp(want, 0.15);
+        camera.position.lerp(want, paused ? 1 : 0.15);
       }
     }
+    if (selected !== null || viewName === "rat") camera.lookAt(controls.target);
     const t = controls.target;
     if (Math.abs(t.x) > REBASE_THRESHOLD || Math.abs(t.z) > REBASE_THRESHOLD) {
       const sx = Math.round(t.x / REBASE_THRESHOLD) * REBASE_THRESHOLD;
@@ -486,7 +490,13 @@ export default function RaceScene() {
   const setRats = useRace((s) => s.setRats);
   const viewName = useRace((s) => s.viewName);
   const selected = useRace((s) => s.selected);
-  const followActive = selected !== null || viewName === "rat";
+  const loadStatus = useRace((s) => s.loadStatus);
+  const followActive = rats.some((r) => r.handle === selected) || (viewName === "rat" && rats.some((r) => !r.stale));
+  useEffect(() => {
+    if (loadStatus !== "loading" && selected !== null && !rats.some((r) => r.handle === selected)) {
+      useRace.getState().setSelected(null);
+    }
+  }, [loadStatus, selected, rats]);
 
   useEffect(() => {
     let alive = true;
