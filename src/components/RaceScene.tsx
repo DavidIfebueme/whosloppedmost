@@ -67,21 +67,6 @@ function curbTexture(): THREE.CanvasTexture {
 function Curbs({ maxDistance }: { readonly maxDistance: number }) {
   const tex = useMemo(() => curbTexture(), []);
   const geos = useMemo(() => {
-    const samples = 500;
-    const left: Array<THREE.Vector3> = [];
-    const right: Array<THREE.Vector3> = [];
-    for (let i = 0; i <= samples; i += 1) {
-      const s = (i / samples) * maxDistance;
-      const p = pointAt(s);
-      const ahead = pointAt(Math.min(s + 2, maxDistance));
-      const dx = ahead.x - p.x;
-      const dz = ahead.z - p.z;
-      const len = Math.hypot(dx, dz) || 1;
-      const nx = (-dz / len) * 3.6;
-      const nz = (dx / len) * 3.6;
-      left.push(new THREE.Vector3(p.x + nx, 0.35, p.z + nz));
-      right.push(new THREE.Vector3(p.x - nx, 0.35, p.z - nz));
-    }
     return [
       circuitStrip(maxDistance, -4.25, -3.8, 0.1),
       circuitStrip(maxDistance, 3.8, 4.25, 0.1),
@@ -110,24 +95,7 @@ function Curbs({ maxDistance }: { readonly maxDistance: number }) {
 
 function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
   const geos = useMemo(() => {
-    const samples = 400;
     const mk = (off: number) => {
-      const pts: Array<THREE.Vector3> = [];
-      for (let i = 0; i <= samples; i += 1) {
-        const s = (i / samples) * maxDistance;
-        const p = pointAt(s);
-        const ahead = pointAt(Math.min(s + 2, maxDistance));
-        const dx = ahead.x - p.x;
-        const dz = ahead.z - p.z;
-        const len = Math.hypot(dx, dz) || 1;
-        pts.push(
-          new THREE.Vector3(
-            p.x + (-dz / len) * off,
-            3.06,
-            p.z + (dx / len) * off,
-          ),
-        );
-      }
       return circuitStrip(maxDistance, off - 0.065, off + 0.065, 0.11);
     };
     return [mk(3.4), mk(-3.4)];
@@ -154,15 +122,6 @@ function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
 
 function GuideLight({ maxDistance }: { readonly maxDistance: number }) {
   const geometry = useMemo(() => {
-    const samples = 400;
-    const pts: Array<THREE.Vector3> = [];
-    for (let i = 0; i <= samples; i += 1) {
-      const s = (i / samples) * maxDistance;
-      const p = pointAt(s);
-      pts.push(new THREE.Vector3(p.x, p.y + 3.4, p.z));
-    }
-    const curve = new THREE.CatmullRomCurve3(pts);
-    void curve;
     return circuitStrip(maxDistance, -4.38, -4.31, 0.12);
   }, [maxDistance]);
 
@@ -251,6 +210,7 @@ function OriginRebase({
   const seenReset = useRef(-1);
   const seenView = useRef(-1);
   const focus = useRef(new THREE.Vector3());
+  const desiredPosition = useRef(new THREE.Vector3());
 
   function applyView(controls: {
     target: THREE.Vector3;
@@ -314,7 +274,7 @@ function OriginRebase({
       if (spot !== undefined && rats.length > 0) {
         focus.current.set(spot.x + spot.tx * 6, spot.y, spot.z + spot.tz * 6);
         controls.target.lerp(focus.current, 0.25);
-        const want = new THREE.Vector3(
+        const want = desiredPosition.current.set(
           spot.x - spot.tx * 18,
           spot.y + 10,
           spot.z - spot.tz * 18,
