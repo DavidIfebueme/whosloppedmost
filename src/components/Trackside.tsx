@@ -182,7 +182,7 @@ function TireStacks({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
-function Floodlights() {
+export function Floodlights() {
   const merged = useMemo(() => {
     const parts: Array<THREE.BufferGeometry> = [];
     const rand = mulberry32(7);
@@ -215,7 +215,7 @@ function Floodlights() {
   );
 }
 
-function Trees() {
+export function Trees() {
   const data = useMemo(() => {
     const rand = mulberry32(42);
     const spots: Array<{ x: number; z: number; s: number }> = [];
@@ -472,7 +472,7 @@ function PitBuilding({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
-function Horizon() {
+export function Horizon() {
   const treesRef = useRef<THREE.InstancedMesh>(null);
 
   const spots = useMemo(() => {
@@ -573,9 +573,6 @@ export default function Trackside({
       <Grandstand maxDistance={maxDistance} />
       <PitBuilding maxDistance={maxDistance} />
       <TireStacks maxDistance={maxDistance} />
-      <Floodlights />
-      <Trees />
-      <Horizon />
     </group>
   );
 }
