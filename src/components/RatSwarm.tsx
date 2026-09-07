@@ -48,21 +48,54 @@ export interface LiveSpot {
 export const liveSpots: Array<LiveSpot> = [];
 
 function buildFallbackGeometry(): THREE.BufferGeometry {
-  const body = new THREE.CapsuleGeometry(0.9, 2.2, 4, 8);
+  // This is deliberately one merged, instanced mesh: the economy path can retain
+  // a recognisable silhouette without multiplying draw calls for every runner.
+  const body = new THREE.CapsuleGeometry(0.88, 2.25, 6, 12);
   body.rotateX(Math.PI / 2);
   body.translate(0, 1.2, 0);
-  const head = new THREE.ConeGeometry(0.7, 1.4, 6);
+  const shoulders = new THREE.SphereGeometry(0.78, 10, 7);
+  shoulders.scale(0.92, 0.84, 1.12);
+  shoulders.translate(0, 1.45, 1.48);
+  const head = new THREE.ConeGeometry(0.7, 1.35, 8);
   head.rotateX(Math.PI / 2);
   head.translate(0, 1.5, 2.2);
-  const earL = new THREE.ConeGeometry(0.25, 0.6, 4);
-  earL.translate(-0.4, 2.4, 1.8);
-  const earR = new THREE.ConeGeometry(0.25, 0.6, 4);
-  earR.translate(0.4, 2.4, 1.8);
-  const tail = new THREE.CylinderGeometry(0.08, 0.16, 2.8, 5);
-  tail.rotateX(-1.15);
-  tail.translate(0, 1.7, -2.5);
+  const snout = new THREE.SphereGeometry(0.28, 8, 6);
+  snout.scale(0.9, 0.7, 1.28);
+  snout.translate(0, 1.35, 3.0);
+  const earL = new THREE.SphereGeometry(0.34, 8, 6);
+  earL.scale(0.55, 0.24, 1);
+  earL.rotateY(-0.25);
+  earL.translate(-0.47, 2.23, 1.94);
+  const earR = new THREE.SphereGeometry(0.34, 8, 6);
+  earR.scale(0.55, 0.24, 1);
+  earR.rotateY(0.25);
+  earR.translate(0.47, 2.23, 1.94);
+  const parts: THREE.BufferGeometry[] = [body, shoulders, head, snout, earL, earR];
+  for (const x of [-0.58, 0.58]) {
+    for (const z of [-0.85, 1.08]) {
+      const paw = new THREE.CapsuleGeometry(0.18, 0.45, 4, 6);
+      paw.rotateX(Math.PI / 2);
+      paw.rotateZ(x * 0.18);
+      paw.translate(x, 0.45, z);
+      parts.push(paw);
+    }
+  }
+  for (const x of [-0.1, 0.1]) {
+    const tail = new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(x, 1.25, -1.9),
+        new THREE.Vector3(x * 3, 1.05, -3.15),
+        new THREE.Vector3(x * 5, 0.65, -3.85),
+      ]),
+      8,
+      0.1,
+      5,
+      false,
+    );
+    parts.push(tail);
+  }
   return (
-    mergeGeometries([body, head, earL, earR, tail]) ??
+    mergeGeometries(parts) ??
     new THREE.BoxGeometry(1, 1, 1)
   );
 }
@@ -301,11 +334,10 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
       }}
     >
       <meshStandardMaterial
-        flatShading
-        roughness={0.7}
-        metalness={0.15}
-        emissive="#1b1514"
-        emissiveIntensity={0.15}
+        roughness={0.88}
+        metalness={0.02}
+        emissive="#160d08"
+        emissiveIntensity={0.08}
       />
     </instancedMesh>
   );
