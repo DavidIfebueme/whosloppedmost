@@ -9,12 +9,16 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   await installFixture(page, 15);
   page.on('pageerror', error => console.error(error.message));
+  console.log(`Opening ${base}/race with 15 fixture runners`);
   await page.goto(`${base}/race?metrics=1`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  console.log('Document loaded, waiting for paused scene');
   await pauseRace(page);
+  console.log('Scene paused');
   for (const camera of ['Overview', 'Rat cam', 'Trackside']) {
     await page.getByRole('button', { name: camera, exact: true }).click({ force: true });
     await page.waitForTimeout(2500);
     const path = `${output}/${camera.toLowerCase().replaceAll(' ', '-')}.png`;
+    console.log(`Capturing ${camera}`);
     await page.screenshot({ path, animations: 'disabled', timeout: 90000 });
     console.log(path);
     console.log(await page.evaluate(() => window.__raceMetrics));
