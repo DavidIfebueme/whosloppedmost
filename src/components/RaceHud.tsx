@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRace } from "@/store/race";
 import Leaderboard from "./Leaderboard";
@@ -18,23 +18,40 @@ export default function RaceHud() {
   const quality = useRace((s) => s.quality);
   const setQuality = useRace((s) => s.setQuality);
   const [panel, setPanel] = useState<"standings" | "join" | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  function togglePanel(next: "standings" | "join") {
+    if (panel === next) {
+      setPanel(null);
+      opener.current?.focus();
+    } else {
+      opener.current = document.activeElement as HTMLElement;
+      setPanel(next);
+    }
+  }
+  function closePanel() {
+    setPanel(null);
+    opener.current?.focus();
+  }
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("join") === "1") setPanel("join");
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { setPanel(null); useRace.getState().setSelected(null); }
+      if (event.key === "Escape") { setPanel(null); opener.current?.focus(); useRace.getState().setSelected(null); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  useEffect(() => {
+    if (selected !== null && window.matchMedia("(max-width: 640px)").matches) setPanel(null);
+  }, [selected]);
   return <div className="race-hud">
-    <header className="race-header"><Link href="/" className="wordmark"><span className="brand-icon">w<span>↗</span></span><span>who slopped most.</span></Link><div className="broadcast-status"><span className="status-dot" /> ON THE WHEEL <span className="broadcast-count">{rats.length} RUNNERS</span></div><button className="hud-join" onClick={() => setPanel(panel === "join" ? null : "join")} aria-expanded={panel === "join"}>Join the race <span>↗</span></button></header>
+    <header className="race-header"><Link href="/" className="wordmark"><span className="brand-icon">w<span>↗</span></span><span>who slopped most.</span></Link><div className="broadcast-status"><span className="status-dot" /> ON THE WHEEL <span className="broadcast-count">{rats.length} RUNNERS</span></div><button className="hud-join" onClick={() => togglePanel("join")} aria-expanded={panel === "join"}>Join the race <span>↗</span></button></header>
     <div className="race-title"><p className="eyebrow">OPEN SEASON / NO FINISH LINE</p><h1>The infinite circuit.</h1><p>Every merge moves the needle. Nobody leaves.</p></div>
     <aside className={`race-panel ${panel ? "is-open" : ""}`} aria-label="Race information">
-      <div className="race-panel-tabs"><button onClick={() => setPanel("standings")} aria-pressed={panel !== "join"}>Running order</button><button onClick={() => setPanel("join")} aria-pressed={panel === "join"}>Get a rat</button><button className="panel-close" aria-label="Close panel" onClick={() => setPanel(null)}>×</button></div>
+      <div className="race-panel-tabs"><button onClick={() => setPanel("standings")} aria-pressed={panel !== "join"}>Running order</button><button onClick={() => setPanel("join")} aria-pressed={panel === "join"}>Get a rat</button><button className="panel-close" aria-label="Close panel" onClick={closePanel}>×</button></div>
       <div className="race-panel-content">{panel === "join" ? <><p className="panel-intro">Your GitHub handle is your entry ticket.</p><RegisterPanel /><p className="panel-footnote">Public merged PRs from the last 12 months. No account required.</p></> : <Leaderboard />}</div>
       <div className="panel-caption">MERGED PRS · LAST 12 MONTHS</div>
     </aside>
-    <button className="mobile-standings" onClick={() => setPanel(panel === "standings" ? null : "standings")} aria-expanded={panel === "standings"}>☷ Running order <span>{rats.length}</span></button>
+    <button className="mobile-standings" onClick={() => togglePanel("standings")} aria-expanded={panel === "standings"}>☷ Running order <span>{rats.length}</span></button>
     <div className="camera-dock"><span className="camera-label">CAMERA</span>{([["galaxy","Overview"],["pits","Trackside"],["rat","Rat cam"]] as const).map(([name,label]) => <button key={name} aria-pressed={view === name && selected === null} onClick={() => { useRace.getState().setSelected(null); requestView(name); }}>{label}</button>)}<button className="camera-reset" aria-label="Reset camera" onClick={resetView}>↺</button></div>
     <button className="pause-control" aria-pressed={paused} onClick={() => setPaused(!paused)}>{paused ? "▶ Resume" : "Ⅱ Pause"}</button>
     <label className="quality-control"><span>Detail</span><select aria-label="Graphics detail" value={quality} onChange={(event) => setQuality(event.target.value as typeof quality)}><option value="auto">Auto</option><option value="performance">Performance</option><option value="cinematic">Cinematic</option></select></label>

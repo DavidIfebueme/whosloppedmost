@@ -26,7 +26,7 @@ button:disabled { cursor: not-allowed; }
 .quality-control { position: absolute; right: 24px; top: 153px; display: flex; align-items: center; gap: 8px; color: #bcc9d4; font-size: 10px; pointer-events: auto; }
 .quality-control select { border: 1px solid #ffffff30; border-radius: 4px; padding: 9px 6px; background: #152332; color: #e1e8ed; font-size: 10px; max-width: 114px; }
 .quality-control select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-@media(max-width:640px) { .quality-control { top: 88px; right: 16px; }.quality-control > span { display: none; }.quality-control select { max-width: 82px; font-size: 9px; } }
+@media(max-width:640px) { .quality-control { top: 184px; right: 16px; }.quality-control > span { display: none; }.quality-control select { max-width: 106px; font-size: 11px; min-height: 40px; } }
 @media(max-width:640px) { .pause-control { top: auto; bottom: 120px; right: 16px; } }
 .race-header { height: 74px; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ffffff18; background: #111d2b99; backdrop-filter: blur(16px); }
 .race-header .wordmark { font-size: 16px; }.broadcast-status { display: flex; gap: 10px; align-items: center; font: 9px monospace; letter-spacing: 1.5px; }.broadcast-count { color: #a2b2c0; margin-left: 18px; border-left: 1px solid #ffffff30; padding-left: 24px; }
@@ -110,6 +110,21 @@ em { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; color: va
 @media (max-width:900px) { .standings-layout { grid-template-columns: 1fr 280px; gap: 20px; }.join-card { padding: 24px; }.race-strip { gap: 14px; }.race-strip > a { display: none; }.hero-content h1 { letter-spacing: -3px; }.caption-coordinate { display: none; }.standing-row { gap: 12px; padding-inline: 18px; } }
 @media (max-width:640px) { .site-header { height: 72px; }.wordmark { font-size: 14px; gap: 9px; }.brand-icon { font-size: 26px; }.site-header nav { gap: 0; }.site-header nav > a:not(.nav-enter) { display: none; }.site-header nav .nav-enter { padding: 11px 12px; font-size: 10px; }.nav-enter span { margin-left: 12px; }.race-hero { min-height: 690px; align-items: start; }.hero-image { background-position: 64% bottom; background-size: auto 68%; background-repeat: no-repeat; }.hero-shade { background: linear-gradient(180deg,#101820 5%,#101820ee 32%,#10182044 65%,#101820 100%); }.hero-content { padding: 45px 6% 235px; }.hero-content h1 { font-size: clamp(44px,11.6vw,68px); letter-spacing: -2.5px; margin-block: 25px 20px; }.hero-description { font-size: 12px; max-width: 310px; }.hero-actions { align-items: start; flex-direction: column; gap: 7px; margin-top: 24px; }.primary-action { padding: 15px 20px; }.hero-proof { display: none; }.circuit-caption { left: 6%; right: auto; bottom: 25px; }.race-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 23px 6%; font-size: 9px; }.race-strip strong { font-size: 14px; }.race-strip > div { font-size: 8px; }.standings-section,.method-section { padding: 48px 6%; }.section-heading { align-items: start; gap: 20px; }.section-heading > p { display: none; }.section-heading h2 { font-size: 34px; }.eyebrow { font-size: 8px; letter-spacing: 1.1px; }.standings-layout { grid-template-columns: 1fr; }.board-heading { padding: 16px; font-size: 7px; letter-spacing: .5px; }.standing-row { grid-template-columns: 18px 30px minmax(0,1fr) auto; gap: 10px; padding: 16px; }.runner-avatar { width: 30px; height: 30px; }.runner-arrow { display: none; }.runner-name { font-size: 12px; }.runner-count { font-size: 13px; }.runner-count span { font-size: 6px; }.join-card { padding: 28px; }.cheese-symbol { float: right; margin: 28px 4px 0 12px; font-size: 80px; }.join-card h3 { font-size: 36px; }.join-card .eyebrow { max-width: 160px; line-height: 1.8; }.method-grid { grid-template-columns: 1fr; gap: 34px; }.method-symbol { padding-bottom: 12px; margin-bottom: 16px; }.method-grid p { max-width: none; }.site-footer { align-items: start; flex-direction: column; gap: 16px; padding: 28px 6%; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *,*::before,*::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+/* Keep broadcast labels readable and panels usable in short landscape windows. */
+.race-title .eyebrow, .race-bottomline, .panel-caption { font-size: 10px; letter-spacing: .7px; }
+.race-panel-content .text-white\/35, .race-panel-content .text-white\/40 { color: #a4b4c1; }
+.race-panel-content button { min-height: 44px; }
+@media (max-height: 580px) {
+  .race-title { display: none; }
+  .race-panel { top: 88px; max-height: calc(100dvh - 150px); }
+  .camera-dock { bottom: 24px; }
+  .race-bottomline { display: none; }
+  .pause-control { top: 86px; bottom: auto; }
+  .quality-control { top: 140px; }
+  .mobile-standings { bottom: 85px; }
+  .race-rat-card { bottom: 84px; }
+}
 
 canvas {
   display: block;

@@ -42,7 +42,7 @@ export default function Leaderboard() {
               <li key={rat.handle}>
                 <button
                   className={`grid w-full grid-cols-[1.5rem_1fr_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors ${
-                    active ? "bg-cheese/15" : "hover:bg-white/5"
+                        active ? "bg-cheese/15" : "hover:bg-white/5"
                   }`}
                   onClick={() =>
                     setSelected(active ? null : rat.handle)
@@ -77,7 +77,7 @@ export default function Leaderboard() {
       {stale.length > 0 && (
         <div>
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.3em] text-white/40">
-            quarantine · {stale.length}
+            awaiting verification · {stale.length}
           </p>
           <ul className="flex flex-col gap-1">
             {stale.map((rat) => (
@@ -87,7 +87,7 @@ export default function Leaderboard() {
               >
                 <span className="truncate text-xs">{rat.handle}</span>
                 <span className="ml-2 shrink-0 rounded-full border border-red-400/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-red-300">
-                  farmed?
+                  unverified
                 </span>
               </li>
             ))}
