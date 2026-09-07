@@ -18,7 +18,7 @@ async function noOverflow(page) {
   assert.ok(size.content <= size.viewport, JSON.stringify(size));
 }
 try {
-  for (const width of [1440, 390, 320, 844]) {
+  for (const width of (process.env.TEST_WIDTHS || '1440,390,320,844').split(',').map(Number)) {
     const page = await browser.newPage({ viewport: { width, height: width === 1440 ? 1000 : width === 844 ? 375 : 844 }, reducedMotion: 'reduce' });
     page.on('pageerror', error => report.errors.push({ width, type: 'pageerror', message: error.message }));
     page.on('console', message => { if (message.type() === 'error') report.errors.push({ width, type: 'console', message: message.text(), location: message.location() }); });
@@ -52,7 +52,7 @@ try {
       assert.equal(await page.getByRole('button', { name: 'Join the race' }).getAttribute('aria-expanded'), 'false');
       await noOverflow(page);
     });
-    if (width === 1440 || width === 390) {
+    if (process.env.SKIP_PERFORMANCE !== '1' && (width === 1440 || width === 390)) {
       for (const count of [15, 80]) {
         await check(`performance ${count} runners ${width}`, async () => {
           await page.unroute('**/api/rats');
