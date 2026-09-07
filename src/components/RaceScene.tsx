@@ -502,7 +502,7 @@ export default function RaceScene() {
         }}
       >
         <color attach="background" args={["#101e2c"]} />
-        <fog attach="fog" args={["#637585", 160, 590]} />
+        <fog attach="fog" args={["#405267", 125, 470]} />
         <EveningSky />
         <hemisphereLight args={["#b1c9e4", "#555c59", 1.8]} />
         <directionalLight position={[70, 50, 100]} color="#9cbcd4" intensity={1.2} />

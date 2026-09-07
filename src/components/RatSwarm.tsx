@@ -350,9 +350,9 @@ function RatDots({ loopLength }: { readonly loopLength: number }) {
     if (d === null || rats.length === 0) {
       return;
     }
-    const far = camera.position.length() > LOD_DISTANCE;
-    d.visible = far;
-    if (!far) {
+    const overview = camera.position.length() > 165;
+    d.visible = overview;
+    if (!overview) {
       return;
     }
     const pos = geometry.getAttribute("position") as THREE.BufferAttribute;
@@ -371,7 +371,7 @@ function RatDots({ loopLength }: { readonly loopLength: number }) {
         useRace.getState().setSelected(rat.handle);
       }
     }}>
-      <pointsMaterial size={6} vertexColors sizeAttenuation />
+      <pointsMaterial size={3.8} vertexColors sizeAttenuation depthWrite={false} transparent opacity={0.9} />
     </points>
   );
 }

@@ -58,8 +58,8 @@ function Skyline({ radius }: { readonly radius: number }) {
   }, [radius]);
   useEffect(() => () => { facade.dispose(); geometries.forEach((g) => g.dispose()); }, [facade, geometries]);
   return <group>
-    <mesh geometry={geometries[0]}><meshStandardMaterial map={facade} emissiveMap={facade} emissive="#c6bcac" emissiveIntensity={0.2} color="#9baab9" roughness={0.66} metalness={0.15} /></mesh>
-    <mesh geometry={geometries[1]}><meshStandardMaterial color="#3f5263" roughness={0.82} /></mesh>
+    <mesh geometry={geometries[0]}><meshStandardMaterial map={facade} emissiveMap={facade} emissive="#6d8293" emissiveIntensity={0.08} color="#54677c" roughness={0.74} metalness={0.08} /></mesh>
+    <mesh geometry={geometries[1]}><meshStandardMaterial color="#314355" roughness={0.88} /></mesh>
   </group>;
 }
 
