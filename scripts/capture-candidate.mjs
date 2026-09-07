@@ -3,12 +3,13 @@ import { launchBrowser, installFixture, pauseRace } from './browser-utils.mjs';
 
 const base = process.env.CAPTURE_URL || 'http://127.0.0.1:3000';
 const output = process.env.CAPTURE_OUTPUT || '/tmp/whoslopped-candidate';
+const runners = Number(process.env.FIXTURE_RUNNERS || 15);
 await mkdir(output, { recursive: true });
 const browser = await launchBrowser();
 let page;
 try {
   page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
-  await installFixture(page, 15);
+  await installFixture(page, runners);
   page.on('pageerror', error => console.error(error.message));
   console.log(`Opening ${base}/race with 15 fixture runners`);
   await page.goto(`${base}/race?metrics=1`, { waitUntil: 'domcontentloaded', timeout: 90000 });
