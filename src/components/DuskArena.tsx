@@ -134,8 +134,8 @@ function ArenaLights({ radius }: { readonly radius: number }) {
 export default function DuskArena({ maxDistance }: { readonly maxDistance: number }) {
   const radius = spiralRadius(maxDistance) + 15;
   const maps = useMemo(() => {
-    const grass = surfaceTexture("grass"); grass.repeat.set(32, 32);
-    const concrete = surfaceTexture("concrete"); concrete.repeat.set(24, 24);
+    const grass = surfaceTexture("grass"); grass.repeat.set(12, 12);
+    const concrete = surfaceTexture("concrete"); concrete.repeat.set(8, 8);
     return { grass, concrete };
   }, []);
   useEffect(() => () => { maps.grass.dispose(); maps.concrete.dispose(); }, [maps]);

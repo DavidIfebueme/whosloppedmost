@@ -42,9 +42,9 @@ function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
   return (
     <mesh geometry={geometry} receiveShadow castShadow>
       <meshStandardMaterial
-        color="#8897a3"
+        color="#35434f"
         map={asphalt}
-        roughness={0.77}
+        roughness={0.9}
         metalness={0.04}
         bumpMap={asphalt}
         bumpScale={0.035}
