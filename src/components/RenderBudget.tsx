@@ -38,7 +38,17 @@ export default function RenderBudget() {
   }, [paused, quality]);
   useFrame(({ camera }, delta) => {
     totalFrames.current++;
-    if (paused || document.hidden) return;
+    if (document.hidden) return;
+    if (paused) {
+      if (enabled.current) window.__raceMetrics = {
+        frameCount: totalFrames.current, fps: 0, frameTimeMs: 0,
+        drawCalls: gl.info.render.calls, triangles: gl.info.render.triangles,
+        geometries: gl.info.memory.geometries, textures: gl.info.memory.textures,
+        dpr: gl.getPixelRatio(), paused, quality,
+        camera: camera.position.toArray(), renderer: rendererName.current,
+      };
+      return;
+    }
     warmup.current += delta;
     if (warmup.current < 2) return;
     sample.current.seconds += delta;
