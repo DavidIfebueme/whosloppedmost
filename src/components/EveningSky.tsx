@@ -22,7 +22,7 @@ void main() {
   color += vec3(1.0, 0.72, 0.4) * smoothstep(0.9996, 0.99985, sun) * 0.7;
   float cloud = sin(direction.x * 13.0 + direction.z * 6.0 + height * 90.0);
   cloud *= sin(direction.x * 21.0 - direction.z * 10.0 + height * 110.0);
-  color = mix(color, color * 0.81 + vec3(0.02, 0.025, 0.03), smoothstep(0.35, 0.8, cloud) * smoothstep(0.32, 0.02, height) * 0.35);
+  color = mix(color, color * 0.81 + vec3(0.02, 0.025, 0.03), smoothstep(0.35, 0.8, cloud) * (1.0 - smoothstep(0.02, 0.32, height)) * 0.35);
   color = mix(vec3(0.14, 0.19, 0.23), color, smoothstep(-0.12, 0.02, direction.y));
   gl_FragColor = vec4(color, 1.0);
   #include <tonemapping_fragment>

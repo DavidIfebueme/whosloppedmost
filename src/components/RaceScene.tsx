@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { pointAt, REBASE_THRESHOLD } from "@/lib/spiral";
+import { pointAt, REBASE_THRESHOLD, spiralRadius } from "@/lib/spiral";
 import RatSwarm, { liveSpots } from "@/components/RatSwarm";
 import RaceHud from "@/components/RaceHud";
 import { isRatDatum, loadCustomRats } from "@/components/RegisterPanel";
@@ -14,6 +14,8 @@ import Trackside from "@/components/Trackside";
 import { useRace } from "@/store/race";
 import { circuitStrip } from "@/components/CircuitGeometry";
 import DuskArena from "@/components/DuskArena";
+import EveningSky from "./EveningSky";
+import { surfaceTexture } from "./SurfaceTextures";
 
 interface RatDatum {
   readonly handle: string;
@@ -24,26 +26,7 @@ interface RatDatum {
 }
 
 function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
-  const asphalt = useMemo(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 128;
-    const context = canvas.getContext("2d");
-    if (context) {
-      const pixels = context.createImageData(128, 128);
-      for (let i = 0; i < pixels.data.length; i += 4) {
-        const grain = 125 + ((Math.imul(i + 11, 16807) >>> 9) % 48);
-        pixels.data[i] = grain;
-        pixels.data[i + 1] = grain;
-        pixels.data[i + 2] = grain;
-        pixels.data[i + 3] = 255;
-      }
-      context.putImageData(pixels, 0, 0);
-    }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.anisotropy = 4;
-    return texture;
-  }, []);
+  const asphalt = useMemo(() => surfaceTexture("asphalt"), []);
   const geometry = useMemo(() => {
     return circuitStrip(maxDistance, -3.8, 3.8, 0.08);
   }, [maxDistance]);
@@ -58,9 +41,11 @@ function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
   return (
     <mesh geometry={geometry} receiveShadow castShadow>
       <meshStandardMaterial
-        color="#18262e"
-        roughness={0.62}
-        metalness={0.15}
+        color="#8897a3"
+        map={asphalt}
+        roughness={0.48}
+        roughnessMap={asphalt}
+        metalness={0.18}
         bumpMap={asphalt}
         bumpScale={0.035}
       />
@@ -75,13 +60,14 @@ function curbTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext("2d");
   if (ctx !== null) {
     for (let i = 0; i < 8; i += 1) {
-      ctx.fillStyle = i % 2 === 0 ? "#d8352c" : "#f2f0e9";
+      ctx.fillStyle = i % 2 === 0 ? "#b67b63" : "#d7d5bd";
       ctx.fillRect(i * 16, 0, 16, 16);
     }
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
-  tex.repeat.set(0.25, 1);
+  tex.repeat.set(0.055, 1);
+  tex.anisotropy = 4;
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
@@ -118,7 +104,7 @@ function Curbs({ maxDistance }: { readonly maxDistance: number }) {
 function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
   const geos = useMemo(() => {
     const mk = (off: number) => {
-      return circuitStrip(maxDistance, off - 0.065, off + 0.065, 0.11);
+      return circuitStrip(maxDistance, off - 0.11, off + 0.11, 0.11);
     };
     return [mk(3.4), mk(-3.4)];
   }, [maxDistance]);
@@ -135,7 +121,7 @@ function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
     <group>
       {geos.map((g, i) => (
         <mesh key={i} geometry={g}>
-          <meshBasicMaterial color="#f5f5f0" />
+          <meshStandardMaterial color="#d3d7d0" roughness={0.8} />
         </mesh>
       ))}
     </group>
@@ -185,10 +171,10 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
       return;
     }
     const dummy = new THREE.Object3D();
-    const red = new THREE.Color("#d8352c");
-    const white = new THREE.Color("#f2f0e9");
+    const red = new THREE.Color("#89979c");
+    const white = new THREE.Color("#bca893");
     placements.forEach((b, i) => {
-      dummy.position.set(b.x, 1.5, b.z);
+      dummy.position.set(b.x, 0.48, b.z);
       dummy.rotation.set(0, b.yaw, 0);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
@@ -206,7 +192,7 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
       args={[undefined, undefined, Math.max(placements.length, 1)]}
       frustumCulled={false}
     >
-      <boxGeometry args={[0.6, 3, 8]} />
+      <boxGeometry args={[0.5, 0.9, 7]} />
       <meshStandardMaterial roughness={0.9} />
     </instancedMesh>
   );
@@ -233,6 +219,7 @@ function OriginRebase({
   const viewName = useRace((s) => s.viewName);
   const seenReset = useRef(-1);
   const seenView = useRef(-1);
+  const aspect = useThree((s) => s.size.width / s.size.height);
   const focus = useRef(new THREE.Vector3());
   const desiredPosition = useRef(new THREE.Vector3());
   useEffect(() => invalidate(), [invalidate, selected, viewTick, resetCounter, paused, rats]);
@@ -242,7 +229,7 @@ function OriginRebase({
     update: () => void;
   }): void {
     if (viewName === "pits") {
-      camera.position.set(95, 45, 95);
+      camera.position.set(98, 20, 90);
       controls.target.set(0, 2, 0);
     } else if (viewName === "rat") {
       let best = 0;
@@ -255,8 +242,10 @@ function OriginRebase({
       camera.position.set(p.x + 30, 22, p.z + 30);
       controls.target.set(p.x, 3, p.z);
     } else {
-      camera.position.set(142, 112, 154);
-      controls.target.set(0, 0, 0);
+      const extent = Math.max(spiralRadius(Math.max(...rats.map((rat) => rat.distance * 1.15), 1200)), 100);
+      const scale = aspect < 1 ? 1.65 : 1;
+      camera.position.set(extent * 1.3 * scale, extent * 1.08 * scale, extent * 1.65 * scale);
+      controls.target.set(aspect < 1 ? 0 : -extent * 0.18, 0, 0);
     }
     controls.update();
   }
@@ -334,7 +323,7 @@ function SunRig() {
       return;
     }
     const t = controls.target;
-    l.position.set(t.x + 120, 180, t.z + 60);
+    l.position.set(t.x - 90, 125, t.z - 110);
     l.target.position.copy(t);
     l.target.updateMatrixWorld();
   });
@@ -342,8 +331,8 @@ function SunRig() {
     <directionalLight
       ref={light}
       castShadow
-      color="#ffbf8a"
-      intensity={2.8}
+      color="#ffd1a7"
+      intensity={3.4}
       shadow-mapSize-width={2048}
       shadow-mapSize-height={2048}
       shadow-camera-left={-170}
@@ -361,22 +350,24 @@ function Cheese() {
   const ref = useRef<THREE.Group>(null);
   const trophy = useMemo(() => {
     const parts: Array<THREE.BufferGeometry> = [];
-    const cup = new THREE.CylinderGeometry(4.2, 2.2, 5, 12);
+    const cup = new THREE.CylinderGeometry(4.2, 2.2, 5, 48);
     cup.translate(0, 6.5, 0);
     parts.push(cup);
-    const stem = new THREE.CylinderGeometry(0.9, 1.4, 3.4, 8);
+    const stem = new THREE.CylinderGeometry(0.9, 1.4, 3.4, 24);
     stem.translate(0, 2.2, 0);
     parts.push(stem);
     const base = new THREE.CylinderGeometry(2.6, 3.0, 1.2, 12);
     base.translate(0, 0, 0);
     parts.push(base);
     for (const side of [-1, 1]) {
-      const handle = new THREE.TorusGeometry(2.2, 0.45, 6, 12, Math.PI);
+      const handle = new THREE.TorusGeometry(2.2, 0.45, 12, 32, Math.PI);
       handle.rotateZ(side > 0 ? -Math.PI / 2 : Math.PI / 2);
       handle.translate(side * 4.4, 6.2, 0);
       parts.push(handle);
     }
-    return mergeGeometries(parts) ?? new THREE.BoxGeometry(1, 1, 1);
+    const merged = mergeGeometries(parts) ?? new THREE.BoxGeometry(1, 1, 1);
+    parts.forEach((part) => part.dispose());
+    return merged;
   }, []);
 
   useEffect(() => {
@@ -395,15 +386,15 @@ function Cheese() {
       <group ref={ref} position={[0, 21, 0]}>
         <mesh position={[0, -6, 0]}>
           <cylinderGeometry args={[7, 9, 2, 16]} />
-          <meshStandardMaterial color="#e8e4d8" roughness={0.9} />
+          <meshStandardMaterial color="#68777e" roughness={0.4} metalness={0.5} />
         </mesh>
         <mesh geometry={trophy}>
           <meshStandardMaterial
             color="#ffd84d"
             emissive="#8a6a00"
-            emissiveIntensity={0.55}
-            roughness={0.25}
-            metalness={0.85}
+            emissiveIntensity={0.08}
+            roughness={0.2}
+            metalness={0.82}
           />
         </mesh>
       </group>
@@ -414,64 +405,15 @@ function Cheese() {
 
 function Ground() {
   const texture = useMemo(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext("2d");
-    if (ctx !== null) {
-      // mowed outfield stripes
-      for (let ring = 0; ring < 8; ring += 1) {
-        ctx.fillStyle = ring % 2 === 0 ? "#203835" : "#1c302e";
-        ctx.beginPath();
-        ctx.arc(256, 256, 256 - ring * 32, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      // grass noise
-      for (let i = 0; i < 2600; i += 1) {
-        const x = Math.random() * 512;
-        const y = Math.random() * 512;
-        ctx.fillStyle =
-          Math.random() > 0.5
-            ? "rgba(255,255,255,0.05)"
-            : "rgba(0,40,0,0.09)";
-        ctx.fillRect(x, y, 2, 2);
-      }
-      // large tonal patches
-      for (let i = 0; i < 26; i += 1) {
-        const x = Math.random() * 512;
-        const y = Math.random() * 512;
-        const r = 30 + Math.random() * 70;
-        const g = ctx.createRadialGradient(x, y, 4, x, y, r);
-        const dark = Math.random() > 0.5;
-        g.addColorStop(0, dark ? "rgba(30,70,30,0.16)" : "rgba(220,255,200,0.10)");
-        g.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
+    const map = surfaceTexture("concrete");
+    map.repeat.set(180, 180);
+    return map;
   }, []);
-
-  useEffect(() => {
-    return () => {
-      texture.dispose();
-    };
-  }, [texture]);
-
-  return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -0.5, 0]}
-      receiveShadow
-    >
-      <circleGeometry args={[6000, 48]} />
-      <meshStandardMaterial map={texture} roughness={1} metalness={0} />
-    </mesh>
-  );
+  useEffect(() => () => texture.dispose(), [texture]);
+  return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.85, 0]} receiveShadow>
+    <circleGeometry args={[1600, 80]} />
+    <meshStandardMaterial map={texture} color="#677780" roughness={0.74} />
+  </mesh>;
 }
 
 export default function RaceScene() {
@@ -539,23 +481,25 @@ export default function RaceScene() {
   }, [rats]);
 
   return (
-    <div className="relative h-screen w-screen bg-void">
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-void">
       <Canvas
         shadows
         frameloop={visible ? paused ? "demand" : "always" : "never"}
         fallback={<div className="p-8 text-white">Your browser cannot display the 3D circuit. Try a browser with WebGL enabled.</div>}
         camera={{ position: [142, 112, 154], fov: 48, near: 0.5, far: 4000 }}
         dpr={[1, 1.5]}
-        gl={{ antialias: true, logarithmicDepthBuffer: true }}
+        gl={{ antialias: true, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
-          gl.toneMappingExposure = 1.15;
+          gl.toneMappingExposure = 1.05;
         }}
       >
         <color attach="background" args={["#101e2c"]} />
-        <fog attach="fog" args={["#263c4b", 200, 850]} />
-        <hemisphereLight args={["#a9cbe6", "#24342d", 1.4]} />
+        <fog attach="fog" args={["#778391", 220, 950]} />
+        <EveningSky />
+        <hemisphereLight args={["#b1c9e4", "#555c59", 1.8]} />
+        <directionalLight position={[70, 50, 100]} color="#9cbcd4" intensity={1.2} />
         <SunRig />
-        <Environment resolution={256}>
+        <Environment resolution={128} frames={1}>
           <group rotation={[-Math.PI / 3, 0, 0]}>
             <Lightformer
               form="circle"
@@ -564,13 +508,13 @@ export default function RaceScene() {
               scale={2}
             />
             <Lightformer
-              color="#8aa0ff"
+              color="#aac9e6"
               intensity={1.5}
               position={[-5, 1, -1]}
               scale={[20, 0.5, 1]}
             />
             <Lightformer
-              color="#ffd84d"
+              color="#ffd0a1"
               intensity={2}
               position={[5, -1, 0]}
               scale={[20, 1, 1]}
