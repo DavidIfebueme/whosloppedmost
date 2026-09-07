@@ -30,6 +30,9 @@ export default function RenderBudget() {
     const context = gl.getContext();
     const extension = context.getExtension("WEBGL_debug_renderer_info");
     rendererName.current = extension ? context.getParameter(extension.UNMASKED_RENDERER_WEBGL) : "unreported";
+    if (/swiftshader|software/i.test(rendererName.current) && useRace.getState().quality === "auto") {
+      useRace.getState().setEconomy(true);
+    }
     return () => { delete window.__raceMetrics; };
   }, [gl]);
   useEffect(() => {

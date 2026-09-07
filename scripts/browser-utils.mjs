@@ -24,7 +24,7 @@ export async function installFixture(page, count) {
 export async function pauseRace(page) {
   const button = page.locator('.pause-control');
   await button.waitFor({ timeout: 90000 });
-  if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
+  if (await button.getAttribute('aria-pressed') !== 'true') await button.click({ force: true });
   await page.waitForTimeout(1200);
 }
 

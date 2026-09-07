@@ -382,7 +382,9 @@ export default function RatSwarm({
   readonly loopLength: number;
 }) {
   const rats = useRace((s) => s.rats);
-  const useSkinned = rats.length <= SKINNED_LIMIT;
+  const quality = useRace((s) => s.quality);
+  const economy = useRace((s) => s.economy);
+  const useSkinned = rats.length <= SKINNED_LIMIT && quality !== "performance" && !economy;
   return (
     <group>
       <SimulationClock />
