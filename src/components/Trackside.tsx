@@ -39,16 +39,16 @@ function Sign({ text, position, width = 12 }: { readonly text: string; readonly 
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
-    canvas.height = 128;
+    canvas.height = 64;
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.fillStyle = "#17272e";
-      ctx.fillRect(0, 0, 1024, 128);
+      ctx.fillRect(0, 0, 1024, 64);
       ctx.fillStyle = "#f4d2a4";
-      ctx.font = "500 54px sans-serif";
+      ctx.font = "500 30px sans-serif";
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
-      ctx.fillText(text, 512, 65, 960);
+      ctx.fillText(text, 512, 33, 960);
     }
     const result = new THREE.CanvasTexture(canvas);
     result.colorSpace = THREE.SRGBColorSpace;
@@ -57,7 +57,7 @@ function Sign({ text, position, width = 12 }: { readonly text: string; readonly 
   }, [text]);
   useEffect(() => () => texture.dispose(), [texture]);
   return <mesh position={position}>
-    <planeGeometry args={[width, width / 8]} />
+    <planeGeometry args={[width, width / 16]} />
     <meshBasicMaterial map={texture} toneMapped={false} />
   </mesh>;
 }
