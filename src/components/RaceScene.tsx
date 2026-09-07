@@ -221,9 +221,11 @@ function OriginRebase({
   const seenReset = useRef(-1);
   const seenView = useRef(-1);
   const aspect = useThree((s) => s.size.width / s.size.height);
+  const extent = Math.max(spiralRadius(Math.max(...rats.map((rat) => rat.distance * 1.15), 1200)), 100);
+  const seenFraming = useRef("");
   const focus = useRef(new THREE.Vector3());
   const desiredPosition = useRef(new THREE.Vector3());
-  useEffect(() => invalidate(), [invalidate, selected, viewTick, resetCounter, paused, rats]);
+  useEffect(() => invalidate(), [invalidate, selected, viewTick, resetCounter, paused, rats, aspect]);
 
   function applyView(controls: {
     target: THREE.Vector3;
@@ -243,7 +245,6 @@ function OriginRebase({
       camera.position.set(p.x + 30, 22, p.z + 30);
       controls.target.set(p.x, 3, p.z);
     } else {
-      const extent = Math.max(spiralRadius(Math.max(...rats.map((rat) => rat.distance * 1.15), 1200)), 100);
       const scale = aspect < 1 ? 1.65 : 1;
       camera.position.set(extent * 1.3 * scale, extent * 1.08 * scale, extent * 1.65 * scale);
       controls.target.set(aspect < 1 ? 0 : -extent * 0.18, 0, 0);
@@ -251,29 +252,33 @@ function OriginRebase({
     controls.update();
   }
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const group = world.current;
     if (group === null || controls === null) {
       return;
     }
-    if (seenReset.current !== resetCounter || seenView.current !== viewTick) {
+    const framing = `${extent}:${aspect < 1}`;
+    if (seenReset.current !== resetCounter || seenView.current !== viewTick || seenFraming.current !== framing) {
       seenReset.current = resetCounter;
       seenView.current = viewTick;
+      seenFraming.current = framing;
       applyView(controls);
-      return;
     }
+    const smoothing = paused ? 1 : 1 - Math.exp(-Math.min(delta, 0.05) * 5);
     if (selected !== null) {
       const idx = rats.findIndex((r) => r.handle === selected);
       const spot = idx >= 0 ? liveSpots[idx] : undefined;
       if (spot !== undefined) {
         focus.current.set(spot.x, spot.y, spot.z);
-        controls.target.lerp(focus.current, paused ? 1 : 0.08);
+        controls.target.lerp(focus.current, smoothing);
+        desiredPosition.current.set(spot.x - spot.tx * 19 + spot.tz * 9, spot.y + 9, spot.z - spot.tz * 19 - spot.tx * 9);
+        camera.position.lerp(desiredPosition.current, smoothing);
       } else if (idx >= 0) {
         const rat = rats[idx];
         if (rat !== undefined) {
           const p = pointAt(rat.distance);
           focus.current.set(p.x, 4, p.z);
-          controls.target.lerp(focus.current, paused ? 1 : 0.08);
+          controls.target.lerp(focus.current, smoothing);
         }
       }
     } else if (viewName === "rat") {
@@ -288,13 +293,13 @@ function OriginRebase({
       const spot = liveSpots[bestIdx];
       if (spot !== undefined && rats.length > 0) {
         focus.current.set(spot.x + spot.tx * 6, spot.y, spot.z + spot.tz * 6);
-        controls.target.lerp(focus.current, paused ? 1 : 0.25);
+        controls.target.lerp(focus.current, smoothing);
         const want = desiredPosition.current.set(
           spot.x - spot.tx * 18,
-          spot.y + 10,
+          spot.y + 7,
           spot.z - spot.tz * 18,
         );
-        camera.position.lerp(want, paused ? 1 : 0.15);
+        camera.position.lerp(want, smoothing);
       }
     }
     if (selected !== null || viewName === "rat") camera.lookAt(controls.target);

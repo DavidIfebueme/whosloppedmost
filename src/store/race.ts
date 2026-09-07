@@ -45,7 +45,7 @@ export const useRace = create<RaceState>()((set) => ({
   setSelected: (selected) => set({ selected }),
   resetCounter: 0,
   resetView: () =>
-    set((s) => ({ selected: null, resetCounter: s.resetCounter + 1 })),
+    set((s) => ({ selected: null, viewName: "galaxy", resetCounter: s.resetCounter + 1 })),
   viewTick: 0,
   viewName: "galaxy",
   requestView: (view) =>
