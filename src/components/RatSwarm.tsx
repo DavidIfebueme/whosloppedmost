@@ -1,7 +1,7 @@
 "use client";
 
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
@@ -107,6 +107,7 @@ interface Runner {
 }
 
 function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
+  const invalidate = useThree((s) => s.invalidate);
   const rats = useRace((s) => s.rats);
   const gltf = useGLTF("/models/rat.glb");
   const holder = useRef<THREE.Group>(null);
@@ -171,6 +172,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
     for (const r of runners) {
       h.add(r.group);
     }
+    invalidate();
     return () => {
       for (const r of runners) {
         h.remove(r.group);
@@ -181,7 +183,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
         (r.tag.material as THREE.SpriteMaterial).dispose();
       }
     };
-  }, [runners]);
+  }, [runners, invalidate]);
 
   useFrame(({ camera }, delta) => {
     const h = holder.current;
@@ -212,7 +214,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       spot.tx = p.tx;
       spot.tz = p.tz;
     });
-  });
+  }, -1);
 
   return <group ref={holder} onClick={(event) => {
     let object: THREE.Object3D | null = event.object;
