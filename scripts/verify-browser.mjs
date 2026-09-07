@@ -47,9 +47,13 @@ try {
       await page.getByRole('button', { name: 'Join the race' }).click();
       const input = page.getByRole('textbox', { name: 'github handle' });
       await input.waitFor({ state: 'visible' });
+      const panel = await page.locator('.race-panel-content').boundingBox();
+      assert.ok(panel && panel.height >= 80, `Panel content height: ${panel?.height}`);
+      await page.screenshot({ path: `${output}/join-${width}.png`, animations: 'disabled', timeout: 90000 });
       await input.focus();
       await page.keyboard.press('Escape');
       assert.equal(await page.getByRole('button', { name: 'Join the race' }).getAttribute('aria-expanded'), 'false');
+      assert.equal(await page.locator('.hud-join').evaluate(element => element === document.activeElement), true, 'Escape must restore focus to the opener');
       await noOverflow(page);
     });
     if (process.env.SKIP_PERFORMANCE !== '1' && (width === 1440 || width === 390)) {
