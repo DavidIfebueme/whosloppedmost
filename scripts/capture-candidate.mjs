@@ -14,7 +14,7 @@ try {
   await page.goto(`${base}/race?metrics=1`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   console.log('Document loaded, waiting for paused scene');
   await pauseRace(page);
-  await page.waitForFunction(() => document.body.textContent.includes('fixture-runner-01'), { timeout: 90000 });
+  await page.waitForFunction(() => document.body.textContent.includes('fixture-runner-01'), undefined, { timeout: 90000 });
   console.log('Scene paused');
   for (const [index, camera] of ['Overview', 'Rat cam', 'Trackside', 'Overview'].entries()) {
     if (index > 0) await page.locator('.camera-dock button').filter({ hasText: camera }).click({ force: true, timeout: 90000 });
