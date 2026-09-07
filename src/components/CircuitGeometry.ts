@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { pointAt } from "../lib/spiral";
 
-/** An upward-facing strip measured along the spiral, with distance-based UVs. */
+/** An upward-facing strip around the closed circuit, with distance-based UVs. */
 export function circuitStrip(distance: number, inner: number, outer: number, height: number) {
   const segments = Math.min(2200, Math.max(700, Math.ceil(distance / 3)));
   const positions: number[] = [];
@@ -10,9 +10,7 @@ export function circuitStrip(distance: number, inner: number, outer: number, hei
   let travelled = 0;
   let previous = pointAt(0);
   for (let i = 0; i <= segments; i++) {
-    // The spiral angle grows with sqrt(distance), so sample angle uniformly.
-    // Uniform distance sampling leaves a visible polygon at the starting grid.
-    const s = distance * (i / segments) ** 2;
+    const s = distance * i / segments;
     const p = pointAt(s);
     const ahead = pointAt(s + 0.001);
     const dx = ahead.x - p.x;

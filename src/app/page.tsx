@@ -34,7 +34,7 @@ export default function HomePage() {
         <nav aria-label="Main navigation"><a href="#standings">Standings</a><a href="#method">The rules</a><Link href="/race" className="nav-enter">Enter the race <span>↗</span></Link></nav>
       </header>
       <section className="race-hero">
-        <div className="hero-image" role="img" aria-label="The spiral race circuit under evening floodlights" />
+        <div className="hero-image" role="img" aria-label="The closed race circuit under evening floodlights" />
         <div className="hero-shade" />
         <div className="hero-content">
           <p className="eyebrow"><span className="status-dot" /> THE INTERNET&apos;S RAT RACE</p>
@@ -43,7 +43,7 @@ export default function HomePage() {
           <div className="hero-actions"><Link href="/race" className="primary-action">Watch the race <span>↗</span></Link><Link href="/race?join=1" className="text-action">Put your rat on the track <span>→</span></Link></div>
           <div className="hero-proof"><span className="tiny-track">◎</span><span>Powered by public GitHub data.<br /><strong>Absolutely no finish line.</strong></span></div>
         </div>
-        <div className="circuit-caption"><span className="crosshair">+</span><div>THE INFINITE CIRCUIT<span>Spiral layout · open season</span></div><span className="caption-coordinate">NO FINISH LINE ↗</span></div>
+        <div className="circuit-caption"><span className="crosshair">+</span><div>THE INFINITE CIRCUIT<span>Closed loop · open season</span></div><span className="caption-coordinate">NO FINISH LINE ↗</span></div>
       </section>
       <section className="race-strip" aria-label="Race statistics"><div><span className="status-dot" /><span>THE RACE GOES ON</span></div><p><strong>{status === "ready" ? live.length : "—"}</strong> runners on track</p><p><strong>{status === "ready" ? total.toLocaleString() : "—"}</strong> merged PRs</p><p><strong>0</strong> destinations reached</p><Link href="/race?view=pits">Trackside view ↗</Link></section>
       <section className="standings-section" id="standings">
@@ -57,7 +57,7 @@ export default function HomePage() {
           <Link href="/race" className="board-footer">Meet everyone on the track <span>→</span></Link>
         </div><aside className="join-card"><div className="cheese-symbol" aria-hidden="true">◒</div><p className="eyebrow">YOUR NEXT QUESTIONABLE DECISION</p><h3>Got commits?<br />Get in.</h3><p>Your public GitHub handle is your entry ticket. We&apos;ll count the merged PRs and give you a rat. The ambition is on you.</p><Link href="/race?join=1" className="primary-action">Join the race <span>↗</span></Link><span className="join-note">No account. No wallet. Just a handle.</span></aside></div>
       </section>
-      <section className="method-section" id="method"><div className="section-heading"><div><p className="eyebrow">THE RULES OF THE RAT RACE</p><h2>Output goes up.<br /><em>Meaning sold separately.</em></h2></div></div><div className="method-grid"><article><span className="method-symbol">↗</span><h3>Ship something.</h3><p>We count merged pull requests from your public GitHub activity over the last 12 months. Real numbers, pulled from the source.</p></article><article><span className="method-symbol">◎</span><h3>Run in circles.</h3><p>Your PR count sets your distance on a spiral using a logarithmic scale. Big numbers get room to run. Nobody gets an exit.</p></article><article><span className="method-symbol">⚑</span><h3>Keep it honest.</h3><p>If GitHub data cannot be verified, that runner waits off-track. A missing count is never presented as a verified zero.</p></article></div></section>
+      <section className="method-section" id="method"><div className="section-heading"><div><p className="eyebrow">THE RULES OF THE RAT RACE</p><h2>Output goes up.<br /><em>Meaning sold separately.</em></h2></div></div><div className="method-grid"><article><span className="method-symbol">↗</span><h3>Ship something.</h3><p>We count merged pull requests from your public GitHub activity over the last 12 months. Real numbers, pulled from the source.</p></article><article><span className="method-symbol">◎</span><h3>Run in circles.</h3><p>Your PR count sets your position on a closed circuit using a logarithmic scale. Big numbers set the pace. Nobody gets an exit.</p></article><article><span className="method-symbol">⚑</span><h3>Keep it honest.</h3><p>If GitHub data cannot be verified, that runner waits off-track. A missing count is never presented as a verified zero.</p></article></div></section>
       <footer className="site-footer"><Link href="/" className="wordmark">who slopped most.</Link><p>A monument to motion without progress.</p><Link href="/race">See you on the wheel ↗</Link></footer>
     </main>
   );

@@ -1,29 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { pointAt, rebaseOffset, spiralRadius } from "./spiral";
+import { CIRCUIT_LENGTH, pointAt, rebaseOffset, spiralRadius } from "./spiral";
 
-describe("spiralRadius", () => {
-  it("grows monotonically with distance", () => {
-    const radii = [0, 50, 200, 1000, 5000].map(spiralRadius);
-    for (let i = 1; i < radii.length; i += 1) {
-      const prev = radii[i - 1];
-      const curr = radii[i];
-      if (prev !== undefined && curr !== undefined) {
-        expect(curr).toBeGreaterThan(prev);
-      }
-    }
+describe("closed circuit", () => {
+  it("uses a stable arena radius", () => {
+    expect(spiralRadius(0)).toBe(108);
+    expect(spiralRadius(5000)).toBe(108);
   });
-});
 
-describe("pointAt", () => {
-  it("starts on the inner ring", () => {
+  it("joins position and tangent continuously", () => {
     const p = pointAt(0);
-    expect(p.y).toBe(0);
-    expect(Math.hypot(p.x, p.z)).toBeCloseTo(20, 5);
+    const end = pointAt(CIRCUIT_LENGTH);
+    const a = pointAt(0.1);
+    const b = pointAt(CIRCUIT_LENGTH + 0.1);
+    expect(end.x).toBeCloseTo(p.x, 8);
+    expect(end.z).toBeCloseTo(p.z, 8);
+    expect(b.x).toBeCloseTo(a.x, 8);
+    expect(b.z).toBeCloseTo(a.z, 8);
   });
 
-  it("returns distinct finite points for distinct distances", () => {
+  it("has finite, varied points inside one lap", () => {
     const a = pointAt(100);
-    const b = pointAt(5000);
+    const b = pointAt(500);
     expect(Number.isFinite(a.x + a.z + b.x + b.z)).toBe(true);
     expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(1);
   });
