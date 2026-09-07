@@ -2,251 +2,150 @@
 
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { pointAt } from "@/lib/spiral";
-import { useRace } from "@/store/race";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { spiralRadius } from "@/lib/spiral";
+import { useRace, type RatDatum } from "@/store/race";
 
-const BANNER_LINES = [
-  "VELOCITY IS VIRTUE",
-  "MERGED PRS = MEANING",
-  "SHIP OR VANISH",
-  "REST IS RUST",
-  "THE WHEEL LOVES YOU",
-  "ZERO STILL COUNTS",
-];
-
-function makeBannerTexture(line: string): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 128;
+function drawStandings(canvas: HTMLCanvasElement, rats: readonly RatDatum[], status: string) {
   const ctx = canvas.getContext("2d");
-  if (ctx !== null) {
-    ctx.fillStyle = "#101019";
-    ctx.fillRect(0, 0, 512, 128);
-    ctx.strokeStyle = "#ffd84d";
-    ctx.lineWidth = 6;
-    ctx.strokeRect(6, 6, 500, 116);
-    ctx.fillStyle = "#f2f0e9";
-    ctx.font = "bold 40px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(line, 256, 66, 470);
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-function Banners({ maxDistance }: { readonly maxDistance: number }) {
-  const textures = useMemo(
-    () => BANNER_LINES.map((line) => makeBannerTexture(line)),
-    [],
-  );
-
-  useEffect(() => {
-    return () => {
-      for (const t of textures) {
-        t.dispose();
-      }
-    };
-  }, [textures]);
-
-  const placements = useMemo(() => {
-    const step = maxDistance / BANNER_LINES.length;
-    return BANNER_LINES.map((_, i) => {
-      const s = step * (i + 0.5);
-      const p = pointAt(s);
-      const ahead = pointAt(Math.min(s + 2, maxDistance));
-      const yaw = Math.atan2(ahead.x - p.x, ahead.z - p.z);
-      return { x: p.x, z: p.z, yaw, tex: i % textures.length };
-    });
-  }, [maxDistance, textures.length]);
-
-  return (
-    <group>
-      {placements.map((b, i) => {
-        const tex = textures[b.tex % textures.length];
-        if (tex === undefined) {
-          return null;
-        }
-        return (
-          <group key={i} position={[b.x, 9, b.z]} rotation={[0, b.yaw, 0]}>
-            <mesh position={[8, 0, 0]}>
-              <boxGeometry args={[0.5, 12, 0.5]} />
-              <meshStandardMaterial color="#2c2c3a" roughness={0.9} />
-            </mesh>
-            <mesh position={[0, 2, 0]}>
-              <planeGeometry args={[16, 4]} />
-              <meshBasicMaterial map={tex} side={THREE.FrontSide} />
-            </mesh>
-            <mesh position={[0, 2, 0]} rotation={[0, Math.PI, 0]}>
-              <planeGeometry args={[16, 4]} />
-              <meshBasicMaterial map={tex} side={THREE.FrontSide} />
-            </mesh>
-          </group>
-        );
-      })}
-    </group>
-  );
-}
-
-interface TowerRow {
-  readonly handle: string;
-  readonly mergedPrs: number;
-}
-
-function drawTower(canvas: HTMLCanvasElement, rows: ReadonlyArray<TowerRow>): void {
-  const ctx = canvas.getContext("2d");
-  if (ctx === null) {
-    return;
-  }
-  ctx.fillStyle = "#0a0e1a";
-  ctx.fillRect(0, 0, 512, 512);
-  ctx.fillStyle = "#d8352c";
-  ctx.fillRect(0, 0, 512, 64);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 30px sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText("WHO SLOPPED MOST", 20, 42);
+  if (!ctx) return;
+  ctx.fillStyle = "#101e29";
+  ctx.fillRect(0, 0, 768, 512);
+  ctx.fillStyle = "#f1c99c";
+  ctx.font = "600 28px sans-serif";
+  ctx.fillText("CIRCUIT 01 / STANDINGS", 36, 51);
+  ctx.fillStyle = "#7195a3";
+  ctx.fillRect(36, 75, 696, 2);
+  ctx.font = "16px monospace";
+  ctx.fillText("VERIFIED RUNNERS", 36, 108);
   ctx.textAlign = "right";
-  ctx.fillStyle = "#ffd84d";
-  ctx.fillText("LIVE", 492, 42);
-  const sorted = [...rows].sort((a, b) => b.mergedPrs - a.mergedPrs);
-  const leader = sorted[0]?.mergedPrs ?? 0;
-  sorted.slice(0, 12).forEach((r, i) => {
-    const y = 100 + i * 33;
-    const leaderRow = i === 0;
-    ctx.fillStyle = leaderRow ? "rgba(255,216,77,0.16)" : "transparent";
-    ctx.fillRect(0, y - 24, 512, 31);
-    ctx.textAlign = "left";
-    ctx.fillStyle = leaderRow ? "#ffd84d" : "#8a93a8";
-    ctx.font = "bold 22px monospace";
-    ctx.fillText(`P${i + 1}`, 20, y);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 22px sans-serif";
-    ctx.fillText(r.handle.slice(0, 14), 80, y);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#c7cede";
-    ctx.font = "22px monospace";
-    const gap = leader - r.mergedPrs;
-    ctx.fillText(gap === 0 ? "LEADER" : `+${gap.toLocaleString()}`, 492, y);
-  });
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#5a6378";
-  ctx.font = "20px sans-serif";
-  ctx.fillText("DISTANCE FROM START: 0m", 256, 496);
+  ctx.fillText("MERGED PRS", 730, 108);
+  const ranked = rats.filter((rat) => !rat.stale).sort((a, b) => b.mergedPrs - a.mergedPrs).slice(0, 6);
+  if (ranked.length === 0) {
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#bbc8ce";
+    ctx.font = "24px sans-serif";
+    ctx.fillText(status === "loading" ? "Fetching the board..." : status === "error" ? "Board unavailable" : "Waiting for the first runner", 384, 265);
+  } else {
+    ranked.forEach((rat, i) => {
+      const y = 158 + i * 49;
+      if (i === 0) {
+        ctx.fillStyle = "#283734";
+        ctx.fillRect(25, y - 30, 718, 43);
+      }
+      ctx.textAlign = "left";
+      ctx.font = "23px monospace";
+      ctx.fillStyle = i === 0 ? "#f1c99c" : "#7195a3";
+      ctx.fillText(String(i + 1).padStart(2, "0"), 38, y);
+      ctx.fillStyle = "#e3e9e9";
+      ctx.font = "24px sans-serif";
+      ctx.fillText(rat.handle.slice(0, 23), 101, y);
+      ctx.textAlign = "right";
+      ctx.font = "23px monospace";
+      ctx.fillText(rat.mergedPrs.toLocaleString(), 728, y);
+    });
+  }
+  ctx.textAlign = "left";
+  ctx.font = "16px monospace";
+  ctx.fillStyle = "#7195a3";
+  ctx.fillText("THE NIGHT SHIFT", 36, 482);
+  ctx.textAlign = "right";
+  ctx.fillText("GITHUB MERGES", 731, 482);
 }
 
-function Jumbotron() {
+function Scoreboard({ radius }: { readonly radius: number }) {
+  const rats = useRace((state) => state.rats);
+  const status = useRace((state) => state.loadStatus);
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
-    canvas.width = 512;
+    canvas.width = 768;
     canvas.height = 512;
-    drawTower(canvas, []);
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
     return tex;
   }, []);
-  const rats = useRace((s) => s.rats);
-
+  const frame = useMemo(() => {
+    const parts = [
+      new THREE.BoxGeometry(0.28, 8, 0.5).translate(-7, 4, 0),
+      new THREE.BoxGeometry(0.28, 8, 0.5).translate(7, 4, 0),
+      new THREE.BoxGeometry(19, 13, 0.5).translate(0, 10, 0),
+    ];
+    const geometry = mergeGeometries(parts);
+    parts.forEach((part) => part.dispose());
+    return geometry ?? new THREE.BufferGeometry();
+  }, []);
+  useEffect(() => () => { texture.dispose(); frame.dispose(); }, [texture, frame]);
   useEffect(() => {
-    return () => {
-      texture.dispose();
-    };
-  }, [texture]);
-
-  useEffect(() => {
-    const canvas = texture.image as HTMLCanvasElement;
-    drawTower(canvas, rats);
+    drawStandings(texture.image as HTMLCanvasElement, rats, status);
     texture.needsUpdate = true;
-  }, [texture, rats]);
-
-  return (
-    <group position={[34, 0, 0]}>
-      <mesh position={[0, 20, 0]} castShadow>
-        <boxGeometry args={[2, 40, 2]} />
-        <meshStandardMaterial color="#3a3f45" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 52, 0]} castShadow>
-        <boxGeometry args={[30, 30, 1.5]} />
-        <meshBasicMaterial map={texture} toneMapped={false} />
-      </mesh>
-    </group>
-  );
+  }, [rats, status, texture]);
+  return <group position={[radius * 0.72 + 12, 0, -radius * 0.75 - 18]} rotation={[0, -0.3, 0]}>
+    <mesh geometry={frame} castShadow><meshStandardMaterial color="#263740" metalness={0.6} roughness={0.4} /></mesh>
+    <mesh position={[0, 10, 0.27]}>
+      <planeGeometry args={[18, 12]} />
+      <meshBasicMaterial map={texture} toneMapped={false} />
+    </mesh>
+    <mesh position={[0, 16.55, 0.1]}>
+      <boxGeometry args={[19, 0.07, 0.2]} />
+      <meshStandardMaterial color="#ffdfaf" emissive="#ffd09c" emissiveIntensity={1.5} />
+    </mesh>
+  </group>;
 }
 
-
-const GRAFFITI = [
-  { line: "steve was here. lap 4001.", s: 300 },
-  { line: "i peaked at 12 prs", s: 700 },
-  { line: "the cheese is a lie", s: 1050 },
-];
-
-function makeGraffitiTexture(line: string): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 128;
-  const ctx = canvas.getContext("2d");
-  if (ctx !== null) {
-    ctx.clearRect(0, 0, 512, 128);
-    ctx.fillStyle = "rgba(200,200,220,0.5)";
-    ctx.font = "italic 44px cursive, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(line, 256, 66, 480);
-    // scrubbed streaks
-    ctx.fillStyle = "rgba(7,7,13,0.55)";
-    for (let i = 0; i < 5; i += 1) {
-      ctx.fillRect(40 + i * 95, 20 + (i % 3) * 22, 70, 12);
+function PerimeterSigns({ radius }: { readonly radius: number }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#182932";
+      ctx.fillRect(0, 0, 1024, 128);
+      ctx.fillStyle = "#f1c99c";
+      ctx.font = "500 40px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("THE NIGHT SHIFT   /   CIRCUIT 01", 512, 64);
     }
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    return tex;
+  }, []);
+  const geometry = useMemo(() => {
+    const blocks: THREE.BufferGeometry[] = [];
+    const faces: THREE.BufferGeometry[] = [];
+    for (const angle of [0.65, 1.9, 3.6]) {
+      const yaw = -angle - Math.PI / 2;
+      const x = Math.cos(angle) * (radius + 8);
+      const z = Math.sin(angle) * (radius + 8);
+      const block = new THREE.BoxGeometry(17, 2.1, 0.5);
+      block.rotateY(yaw);
+      block.translate(x, 1.05, z);
+      blocks.push(block);
+      const face = new THREE.PlaneGeometry(16, 2);
+      face.translate(0, 0, 0.26);
+      face.rotateY(yaw);
+      face.translate(x, 1.08, z);
+      faces.push(face);
+    }
+    const result = [mergeGeometries(blocks) ?? new THREE.BufferGeometry(), mergeGeometries(faces) ?? new THREE.BufferGeometry()] as const;
+    [...blocks, ...faces].forEach((part) => part.dispose());
+    return result;
+  }, [radius]);
+  useEffect(() => () => { texture.dispose(); }, [texture]);
+  useEffect(() => () => geometry.forEach((part) => part.dispose()), [geometry]);
+  return <group>
+    <mesh geometry={geometry[0]} receiveShadow><meshStandardMaterial color="#485457" roughness={0.8} /></mesh>
+    <mesh geometry={geometry[1]}><meshBasicMaterial map={texture} toneMapped={false} /></mesh>
+  </group>;
 }
 
-function Graffiti({ maxDistance }: { readonly maxDistance: number }) {
-  const textures = useMemo(() => GRAFFITI.map((g) => makeGraffitiTexture(g.line)), []);
-
-  useEffect(() => {
-    return () => {
-      for (const t of textures) {
-        t.dispose();
-      }
-    };
-  }, [textures]);
-
-  return (
-    <group>
-      {GRAFFITI.map((g, i) => {
-        const s = Math.min(g.s, maxDistance - 10);
-        const p = pointAt(s);
-        const ahead = pointAt(Math.min(s + 2, maxDistance));
-        const yaw = Math.atan2(ahead.x - p.x, ahead.z - p.z);
-        const tex = textures[i % textures.length];
-        if (tex === undefined) {
-          return null;
-        }
-        return (
-          <mesh key={g.line} position={[p.x, 1.6, p.z]} rotation={[0, yaw, 0]}>
-            <planeGeometry args={[10, 2.5]} />
-            <meshBasicMaterial map={tex} transparent opacity={0.85} side={THREE.DoubleSide} />
-          </mesh>
-        );
-      })}
-    </group>
-  );
-}
-
-export default function StoryProps({
-  maxDistance,
-}: {
-  readonly maxDistance: number;
-}) {
-  return (
-    <group>
-      <Banners maxDistance={maxDistance} />
-      <Graffiti maxDistance={maxDistance} />
-      <Jumbotron />
-    </group>
-  );
+export default function StoryProps({ maxDistance }: { readonly maxDistance: number }) {
+  const radius = spiralRadius(maxDistance);
+  return <group>
+    <Scoreboard radius={radius} />
+    <PerimeterSigns radius={radius} />
+  </group>;
 }
