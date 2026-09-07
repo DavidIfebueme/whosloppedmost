@@ -35,6 +35,7 @@ function Skyline({ radius }: { readonly radius: number }) {
   const geometries = useMemo(() => {
     const blocks: THREE.BufferGeometry[] = [];
     const rooftops: THREE.BufferGeometry[] = [];
+    const windows: THREE.BufferGeometry[] = [];
     const random = seededRandom(7301);
     for (let i = 0; i < 100; i++) {
       const angle = random() * Math.PI * 2;
@@ -53,13 +54,29 @@ function Skyline({ radius }: { readonly radius: number }) {
         const antenna = new THREE.CylinderGeometry(0.15, 0.3, 10, 4);
         antenna.translate(x, height + 6, z); rooftops.push(antenna);
       }
+      // A second emissive batch breaks up the repeated facade texture at the
+      // distances where individual architectural meshes would be wasteful.
+      const yaw = angle * 0.3;
+      for (let row = 0; row < Math.max(2, Math.floor(height / 19)); row++) {
+        if (random() < 0.2) continue;
+        const panel = new THREE.BoxGeometry(Math.min(5.2, width * 0.34), 1.25, 0.08);
+        const offset = depth / 2 + 0.06;
+        panel.rotateY(yaw);
+        panel.translate(
+          x + Math.sin(yaw) * offset,
+          7 + row * 12 + random() * 2,
+          z + Math.cos(yaw) * offset,
+        );
+        windows.push(panel);
+      }
     }
-    return [merge(blocks), merge(rooftops)] as const;
+    return [merge(blocks), merge(rooftops), merge(windows)] as const;
   }, [radius]);
   useEffect(() => () => { facade.dispose(); geometries.forEach((g) => g.dispose()); }, [facade, geometries]);
   return <group>
     <mesh geometry={geometries[0]}><meshStandardMaterial map={facade} emissiveMap={facade} emissive="#6d8293" emissiveIntensity={0.08} color="#54677c" roughness={0.74} metalness={0.08} /></mesh>
     <mesh geometry={geometries[1]}><meshStandardMaterial color="#314355" roughness={0.88} /></mesh>
+    <mesh geometry={geometries[2]}><meshBasicMaterial color="#ffd39a" toneMapped={false} /></mesh>
   </group>;
 }
 
@@ -67,8 +84,8 @@ function Palms({ radius }: { readonly radius: number }) {
   const geometry = useMemo(() => {
     const trunks: THREE.BufferGeometry[] = [], fronds: THREE.BufferGeometry[] = [];
     const random = seededRandom(8603);
-    for (let tree = 0; tree < 28; tree++) {
-      const angle = tree / 28 * Math.PI * 2 + random() * 0.08;
+    for (let tree = 0; tree < 44; tree++) {
+      const angle = tree / 44 * Math.PI * 2 + random() * 0.08;
       const r = radius + 30 + random() * 46;
       const x = Math.cos(angle) * r, z = Math.sin(angle) * r;
       const height = 13 + random() * 11;
@@ -107,8 +124,8 @@ function Palms({ radius }: { readonly radius: number }) {
 function ArenaLights({ radius }: { readonly radius: number }) {
   const geometry = useMemo(() => {
     const structure: THREE.BufferGeometry[] = [], emitters: THREE.BufferGeometry[] = [];
-    for (let i = 0; i < 12; i++) {
-      const angle = i / 12 * Math.PI * 2;
+    for (let i = 0; i < 18; i++) {
+      const angle = i / 18 * Math.PI * 2;
       const x = Math.cos(angle) * (radius + 10), z = Math.sin(angle) * (radius + 10);
       const pole = new THREE.CylinderGeometry(0.22, 0.46, 24, 8);
       pole.translate(x, 12, z); structure.push(pole);
