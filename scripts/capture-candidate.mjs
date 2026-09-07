@@ -11,7 +11,7 @@ try {
   page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   await installFixture(page, runners);
   page.on('pageerror', error => console.error(error.message));
-  console.log(`Opening ${base}/race with 15 fixture runners`);
+  console.log(`Opening ${base}/race with ${runners} fixture runners`);
   await page.goto(`${base}/race?metrics=1`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   console.log('Document loaded, waiting for paused scene');
   await pauseRace(page);
