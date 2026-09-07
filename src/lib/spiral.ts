@@ -1,5 +1,3 @@
-export const INNER_RADIUS = 20;
-export const SPIRAL_GROWTH = 2.5;
 /** A closed course means runners never teleport from a visible finish back to a start. */
 export const CIRCUIT_LENGTH = 1200;
 export const REBASE_THRESHOLD = 5000;
@@ -9,13 +7,6 @@ export interface TrackPoint {
   readonly x: number;
   readonly y: number;
   readonly z: number;
-}
-
-function thetaFor(distance: number): number {
-  if (distance <= 0) {
-    return 0;
-  }
-  return Math.sqrt((2 * distance) / SPIRAL_GROWTH);
 }
 
 export function spiralRadius(distance: number): number {
