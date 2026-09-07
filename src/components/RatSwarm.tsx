@@ -95,7 +95,7 @@ function ratColor(laps: number, stale: boolean): THREE.Color {
   if (laps > 0) {
     return new THREE.Color("#ffd84d");
   }
-  return new THREE.Color("#7dd3fc");
+  return new THREE.Color("#9d7659");
 }
 
 interface Runner {
@@ -304,8 +304,8 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
         flatShading
         roughness={0.7}
         metalness={0.15}
-        emissive="#23232e"
-        emissiveIntensity={1}
+        emissive="#1b1514"
+        emissiveIntensity={0.15}
       />
     </instancedMesh>
   );
