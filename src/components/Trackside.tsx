@@ -109,7 +109,7 @@ function Grandstand({ radius }: { readonly radius: number }) {
     for (let row = 0; row < 8; row++) {
       const z = 2 - row * 1.9;
       const y = 0.65 + row * 0.82;
-      list.push({ surface: "concrete", size: [83, 0.6, 1.9], position: [0, y, z] });
+      list.push({ surface: "concrete", size: [83, y + 0.3, 1.9], position: [0, (y + 0.3) / 2, z] });
       for (let seat = 0; seat < 40; seat++) {
         const x = -39.5 + seat * 2;
         if (seat % 10 === 0) continue;
