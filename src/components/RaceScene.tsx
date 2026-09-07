@@ -294,9 +294,9 @@ function OriginRebase({
         focus.current.set(spot.x + spot.tx * 6, spot.y, spot.z + spot.tz * 6);
         controls.target.lerp(focus.current, smoothing);
         const want = desiredPosition.current.set(
-          spot.x - spot.tx * 26 + spot.tz * 14,
+          spot.x - spot.tx * 39 + spot.tz * 20,
           spot.y + 14,
-          spot.z - spot.tz * 26 - spot.tx * 14,
+          spot.z - spot.tz * 39 - spot.tx * 20,
         );
         camera.position.lerp(want, smoothing);
       }
