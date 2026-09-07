@@ -6,12 +6,26 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { pointAt } from "@/lib/spiral";
-import { useRace } from "@/store/race";
+import { pointAt, spiralRadius } from "@/lib/spiral";
+import { useRace, type RatDatum } from "@/store/race";
 
 const LOD_DISTANCE = 900;
 const SKINNED_LIMIT = 40;
 let simulationTime = 0;
+
+function runnerPose(rat: RatDatum, index: number, loopLength: number) {
+  if (rat.stale) {
+    const x = spiralRadius(loopLength) + 10;
+    const z = (index % 12 - 5.5) * 3.5;
+    return { x, y: 0, z, tx: 0, tz: 1 };
+  }
+  const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
+  const s = (rat.distance + simulationTime * speed) % loopLength;
+  const point = pointAt(s);
+  const ahead = pointAt(s + 0.5);
+  const length = Math.hypot(ahead.x - point.x, ahead.z - point.z) || 1;
+  return { ...point, tx: (ahead.x - point.x) / length, tz: (ahead.z - point.z) / length };
+}
 
 function SimulationClock() {
   useFrame((_, delta) => {
@@ -89,6 +103,7 @@ interface Runner {
   readonly tag: THREE.Sprite;
   readonly tagTexture: THREE.CanvasTexture;
   readonly groundOffset: number;
+  readonly materials: THREE.Material[];
 }
 
 function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
@@ -104,23 +119,28 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       group.userData.handle = rat.handle;
       group.updateMatrixWorld(true);
       const groundOffset = -new THREE.Box3().setFromObject(group).min.y;
+      const materials: THREE.Material[] = [];
       group.traverse((o) => {
         o.frustumCulled = false;
         if (o instanceof THREE.Mesh) {
           o.castShadow = true;
-          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          const mats = (Array.isArray(o.material) ? o.material : [o.material]).map((material) => material.clone());
+          o.material = Array.isArray(o.material) ? mats : mats[0]!;
+          materials.push(...mats);
           for (const mat of mats) {
             if (mat instanceof THREE.MeshStandardMaterial) {
               if (mat.name === "Grey") {
                 mat.color.set("#8a6f55");
               }
               mat.envMapIntensity = 0.9;
+              mat.metalness = 0;
+              mat.roughness = mat.name === "Grey" ? 0.87 : 0.66;
             }
           }
         }
       });
       let mixer: THREE.AnimationMixer | null = null;
-      if (runClip !== undefined) {
+      if (runClip !== undefined && !rat.stale) {
         mixer = new THREE.AnimationMixer(group);
         const action = mixer.clipAction(runClip);
         action.timeScale = 0.7 + Math.log10(1 + rat.mergedPrs) * 0.25 + (i % 5) * 0.05;
@@ -137,9 +157,9 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
           depthWrite: false,
         }),
       );
-      tag.scale.set(11, 2.75, 1);
+      tag.scale.set(8, 2, 1);
       group.add(tag);
-      return { group, mixer, tag, tagTexture, groundOffset };
+      return { group, mixer, tag, tagTexture, groundOffset, materials };
     });
   }, [gltf, rats]);
 
@@ -155,6 +175,8 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       for (const r of runners) {
         h.remove(r.group);
         r.mixer?.stopAllAction();
+        r.mixer?.uncacheRoot(r.group);
+        r.materials.forEach((material) => material.dispose());
         r.tagTexture.dispose();
         (r.tag.material as THREE.SpriteMaterial).dispose();
       }
@@ -173,25 +195,22 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
         return;
       }
       if (h?.visible && !useRace.getState().paused) runner.mixer?.update(Math.min(delta, 0.05));
-      const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
-      const s = (rat.distance + t * speed) % loopLength;
-      const p = pointAt(s);
-      const ahead = pointAt(s + 0.5);
-      const yaw = Math.atan2(ahead.x - p.x, ahead.z - p.z);
-      const bob = Math.sin(t * 9 + i * 1.7) * 0.06;
+      const p = runnerPose(rat, i, loopLength);
+      const yaw = Math.atan2(p.tx, p.tz);
+      const bob = rat.stale ? 0 : Math.sin(t * 9 + i * 1.7) * 0.06;
       runner.group.position.set(p.x, 0.15 + runner.groundOffset + bob, p.z);
       runner.group.rotation.set(0, yaw, 0);
       const camDist = camera.position.distanceTo(runner.group.position);
       const mat = runner.tag.material as THREE.SpriteMaterial;
-      mat.opacity = camDist > 1200 ? 0 : camDist > 500 ? 0.85 : 1;
-      runner.tag.position.set(0, 7.5, 0);
-      const alen = Math.hypot(ahead.x - p.x, ahead.z - p.z) || 1;
+      runner.tag.visible = useRace.getState().selected === rat.handle || camDist < 85;
+      mat.opacity = 0.95;
+      runner.tag.position.set(0, 4.5, 0);
       const spot = liveSpots[i] ?? (liveSpots[i] = { x: 0, y: 0, z: 0, tx: 0, tz: 0 });
       spot.x = p.x;
       spot.y = 2;
       spot.z = p.z;
-      spot.tx = (ahead.x - p.x) / alen;
-      spot.tz = (ahead.z - p.z) / alen;
+      spot.tx = p.tx;
+      spot.tz = p.tz;
     });
   });
 
@@ -210,7 +229,7 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const geometry = useMemo(() => buildFallbackGeometry(), []);
-  const count = Math.max(rats.length, 1);
+  const count = rats.length;
 
   useEffect(() => {
     return () => {
@@ -239,24 +258,20 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
     m.visible = camera.position.length() <= LOD_DISTANCE;
     const t = simulationTime;
     rats.forEach((rat, i) => {
-      const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
-      const s = (rat.distance + t * speed) % loopLength;
-      const p = pointAt(s);
-      const ahead = pointAt(s + 0.5);
-      const yaw = Math.atan2(ahead.x - p.x, ahead.z - p.z);
-      const bob = Math.sin(t * 10 + i * 1.7) * 0.25;
+      const p = runnerPose(rat, i, loopLength);
+      const yaw = Math.atan2(p.tx, p.tz);
+      const bob = rat.stale ? 0 : Math.sin(t * 10 + i * 1.7) * 0.12;
       dummy.position.set(p.x, 0.15 + bob, p.z);
       dummy.rotation.set(0, yaw, Math.sin(t * 10 + i) * 0.06);
       dummy.scale.setScalar(1.3);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
-      const alen = Math.hypot(ahead.x - p.x, ahead.z - p.z) || 1;
       const spot = liveSpots[i] ?? (liveSpots[i] = { x: 0, y: 0, z: 0, tx: 0, tz: 0 });
       spot.x = p.x;
       spot.y = 2;
       spot.z = p.z;
-      spot.tx = (ahead.x - p.x) / alen;
-      spot.tz = (ahead.z - p.z) / alen;
+      spot.tx = p.tx;
+      spot.tz = p.tz;
     });
     m.instanceMatrix.needsUpdate = true;
   });
@@ -288,7 +303,7 @@ function InstancedFallback({ loopLength }: { readonly loopLength: number }) {
 function RatDots({ loopLength }: { readonly loopLength: number }) {
   const rats = useRace((s) => s.rats);
   const points = useRef<THREE.Points>(null);
-  const count = Math.max(rats.length, 1);
+  const count = rats.length;
   const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute(
@@ -330,11 +345,8 @@ function RatDots({ loopLength }: { readonly loopLength: number }) {
       return;
     }
     const pos = geometry.getAttribute("position") as THREE.BufferAttribute;
-    const t = simulationTime;
     rats.forEach((rat, i) => {
-      const speed = 4 + Math.log10(1 + rat.mergedPrs) * 6;
-      const s = (rat.distance + t * speed) % loopLength;
-      const p = pointAt(s);
+      const p = runnerPose(rat, i, loopLength);
       pos.setXYZ(i, p.x, 3.2, p.z);
     });
     pos.needsUpdate = true;
