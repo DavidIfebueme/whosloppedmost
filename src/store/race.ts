@@ -32,7 +32,8 @@ interface RaceState {
 
 export const useRace = create<RaceState>()((set) => ({
   quality: "auto",
-  setQuality: (quality) => set({ quality }),
+  // A manual quality choice must override an earlier automatic downgrade.
+  setQuality: (quality) => set({ quality, economy: quality === "auto" ? false : quality === "performance" }),
   economy: false,
   setEconomy: (economy) => set({ economy }),
   loadStatus: "loading",
