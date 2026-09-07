@@ -44,9 +44,8 @@ function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
       <meshStandardMaterial
         color="#8897a3"
         map={asphalt}
-        roughness={0.48}
-        roughnessMap={asphalt}
-        metalness={0.18}
+        roughness={0.77}
+        metalness={0.04}
         bumpMap={asphalt}
         bumpScale={0.035}
       />
@@ -295,9 +294,9 @@ function OriginRebase({
         focus.current.set(spot.x + spot.tx * 6, spot.y, spot.z + spot.tz * 6);
         controls.target.lerp(focus.current, smoothing);
         const want = desiredPosition.current.set(
-          spot.x - spot.tx * 18,
-          spot.y + 7,
-          spot.z - spot.tz * 18,
+          spot.x - spot.tx * 26 + spot.tz * 14,
+          spot.y + 14,
+          spot.z - spot.tz * 26 - spot.tx * 14,
         );
         camera.position.lerp(want, smoothing);
       }
@@ -394,7 +393,7 @@ function Cheese() {
           <cylinderGeometry args={[7, 9, 2, 16]} />
           <meshStandardMaterial color="#68777e" roughness={0.4} metalness={0.5} />
         </mesh>
-        <mesh geometry={trophy}>
+        <mesh geometry={trophy} position={[0, -4.4, 0]}>
           <meshStandardMaterial
             color="#ffd84d"
             emissive="#8a6a00"
@@ -412,13 +411,13 @@ function Cheese() {
 function Ground() {
   const texture = useMemo(() => {
     const map = surfaceTexture("concrete");
-    map.repeat.set(180, 180);
+    map.repeat.set(70, 70);
     return map;
   }, []);
   useEffect(() => () => texture.dispose(), [texture]);
   return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.85, 0]} receiveShadow>
     <circleGeometry args={[1600, 80]} />
-    <meshStandardMaterial map={texture} color="#677780" roughness={0.74} />
+    <meshStandardMaterial color="#354954" roughness={0.95} />
   </mesh>;
 }
 
@@ -503,7 +502,7 @@ export default function RaceScene() {
         }}
       >
         <color attach="background" args={["#101e2c"]} />
-        <fog attach="fog" args={["#778391", 220, 950]} />
+        <fog attach="fog" args={["#637585", 160, 590]} />
         <EveningSky />
         <hemisphereLight args={["#b1c9e4", "#555c59", 1.8]} />
         <directionalLight position={[70, 50, 100]} color="#9cbcd4" intensity={1.2} />

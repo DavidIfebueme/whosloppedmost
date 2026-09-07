@@ -155,6 +155,6 @@ export default function DuskArena({ maxDistance }: { readonly maxDistance: numbe
     <mesh position={[0, 7.8, 0]} castShadow><cylinderGeometry args={[3.5, 4.5, 13, 32]} /><meshStandardMaterial color="#304149" metalness={0.65} roughness={0.24} /></mesh>
     <Palms radius={radius} />
     <ArenaLights radius={radius} />
-    <Skyline radius={radius + 155} />
+    <Skyline radius={radius + 225} />
   </group>;
 }

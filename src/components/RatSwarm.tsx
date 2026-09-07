@@ -11,7 +11,8 @@ import { useRace, type RatDatum } from "@/store/race";
 
 const LOD_DISTANCE = 900;
 const SKINNED_LIMIT = 40;
-let simulationTime = 0;
+// Join an already-running race rather than stack similar scores on the grid.
+let simulationTime = 240;
 
 function runnerPose(rat: RatDatum, index: number, loopLength: number) {
   if (rat.stale) {
@@ -204,7 +205,7 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       runner.group.rotation.set(0, yaw, 0);
       const camDist = camera.position.distanceTo(runner.group.position);
       const mat = runner.tag.material as THREE.SpriteMaterial;
-      runner.tag.visible = useRace.getState().selected === rat.handle || camDist < 85;
+      runner.tag.visible = runner.group.userData.hovered === true && camDist > 14 && camDist < 90 && useRace.getState().viewName !== "rat" && useRace.getState().selected === null;
       mat.opacity = 0.95;
       runner.tag.position.set(0, 4.5, 0);
       const spot = liveSpots[i] ?? (liveSpots[i] = { x: 0, y: 0, z: 0, tx: 0, tz: 0 });
@@ -216,7 +217,15 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
     });
   }, -1);
 
-  return <group ref={holder} onClick={(event) => {
+  return <group ref={holder} onPointerOver={(event) => {
+    let object: THREE.Object3D | null = event.object;
+    while (object && typeof object.userData.handle !== "string") object = object.parent;
+    if (object) { event.stopPropagation(); object.userData.hovered = true; invalidate(); }
+  }} onPointerOut={(event) => {
+    let object: THREE.Object3D | null = event.object;
+    while (object && typeof object.userData.handle !== "string") object = object.parent;
+    if (object) { object.userData.hovered = false; invalidate(); }
+  }} onClick={(event) => {
     let object: THREE.Object3D | null = event.object;
     while (object && typeof object.userData.handle !== "string") object = object.parent;
     if (object) {
