@@ -238,7 +238,10 @@ function SkinnedRats({ loopLength }: { readonly loopLength: number }) {
       runner.group.rotation.set(0, yaw, 0);
       const camDist = camera.position.distanceTo(runner.group.position);
       const mat = runner.tag.material as THREE.SpriteMaterial;
-      runner.tag.visible = runner.group.userData.hovered === true && camDist > 14 && camDist < 90 && useRace.getState().viewName !== "rat" && useRace.getState().selected === null;
+      const selected = useRace.getState().selected;
+      // One broadcast label identifies the pace-setter; selecting any runner
+      // transfers that label to its owner without obscuring the whole track.
+      runner.tag.visible = (selected === rat.handle || (selected === null && i === 0) || runner.group.userData.hovered === true) && camDist > 14 && camDist < 90 && useRace.getState().viewName !== "rat";
       mat.opacity = 0.95;
       runner.tag.position.set(0, 4.5, 0);
       const spot = liveSpots[i] ?? (liveSpots[i] = { x: 0, y: 0, z: 0, tx: 0, tz: 0 });
