@@ -11,8 +11,9 @@ export async function launchBrowser() {
 export function fixtureRats(count) {
   return Array.from({ length: count }, (_, index) => ({
     handle: `fixture-runner-${String(index + 1).padStart(2, '0')}`,
-    mergedPrs: 2400 - index * 27, distance: 4800 - index * 51,
-    laps: 15 - index / 10, stale: false,
+    mergedPrs: 2400 - index * 27,
+    distance: Math.log10(1 + 2400 - index * 27) * 100,
+    laps: Math.floor(Math.log10(1 + 2400 - index * 27) * 100 / 1000), stale: false,
   }));
 }
 
