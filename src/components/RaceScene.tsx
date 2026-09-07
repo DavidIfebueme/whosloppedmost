@@ -15,6 +15,7 @@ import { useRace } from "@/store/race";
 import { circuitStrip } from "@/components/CircuitGeometry";
 import DuskArena from "@/components/DuskArena";
 import EveningSky from "./EveningSky";
+import RenderBudget from "./RenderBudget";
 import { surfaceTexture } from "./SurfaceTextures";
 
 interface RatDatum {
@@ -418,6 +419,9 @@ function Ground() {
 
 export default function RaceScene() {
   const paused = useRace((s) => s.paused);
+  const quality = useRace((s) => s.quality);
+  const economy = useRace((s) => s.economy);
+  const low = quality === "performance" || (quality === "auto" && economy);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -483,11 +487,11 @@ export default function RaceScene() {
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-void">
       <Canvas
-        shadows
+        shadows={!low}
         frameloop={visible ? paused ? "demand" : "always" : "never"}
         fallback={<div className="p-8 text-white">Your browser cannot display the 3D circuit. Try a browser with WebGL enabled.</div>}
         camera={{ position: [142, 112, 154], fov: 48, near: 0.5, far: 4000 }}
-        dpr={[1, 1.5]}
+        dpr={low ? 0.85 : [1, quality === "cinematic" ? 2 : 1.5]}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.toneMappingExposure = 1.05;
@@ -535,6 +539,7 @@ export default function RaceScene() {
           <Cheese />
         </group>
         <OriginRebase world={world} />
+        <RenderBudget />
         <OrbitControls
           makeDefault
           enabled={!followActive}

@@ -15,6 +15,8 @@ export default function RaceHud() {
   const resetView = useRace((s) => s.resetView);
   const paused = useRace((s) => s.paused);
   const setPaused = useRace((s) => s.setPaused);
+  const quality = useRace((s) => s.quality);
+  const setQuality = useRace((s) => s.setQuality);
   const [panel, setPanel] = useState<"standings" | "join" | null>(null);
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("join") === "1") setPanel("join");
@@ -35,6 +37,7 @@ export default function RaceHud() {
     <button className="mobile-standings" onClick={() => setPanel(panel === "standings" ? null : "standings")} aria-expanded={panel === "standings"}>☷ Running order <span>{rats.length}</span></button>
     <div className="camera-dock"><span className="camera-label">CAMERA</span>{([["galaxy","Overview"],["pits","Trackside"],["rat","Rat cam"]] as const).map(([name,label]) => <button key={name} aria-pressed={view === name && selected === null} onClick={() => { useRace.getState().setSelected(null); requestView(name); }}>{label}</button>)}<button className="camera-reset" aria-label="Reset camera" onClick={resetView}>↺</button></div>
     <button className="pause-control" aria-pressed={paused} onClick={() => setPaused(!paused)}>{paused ? "▶ Resume" : "Ⅱ Pause"}</button>
+    <label className="quality-control"><span>Detail</span><select aria-label="Graphics detail" value={quality} onChange={(event) => setQuality(event.target.value as typeof quality)}><option value="auto">Auto</option><option value="performance">Performance</option><option value="cinematic">Cinematic</option></select></label>
     <div className="race-rat-card"><RatCard /></div>
     <div className="race-bottomline"><span className="status-dot" /><span>{selected ? `FOLLOWING ${selected}` : view === "rat" ? "FOLLOWING THE LEADER" : "DRAG TO ORBIT · SCROLL TO ZOOM"}</span><span>THE RUNNING IS REAL. THE PROGRESS IS NOT.</span></div>
   </div>;

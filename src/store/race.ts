@@ -11,6 +11,10 @@ export interface RatDatum {
 export type CameraView = "galaxy" | "pits" | "rat";
 
 interface RaceState {
+  readonly quality: "auto" | "performance" | "cinematic";
+  readonly setQuality: (quality: "auto" | "performance" | "cinematic") => void;
+  readonly economy: boolean;
+  readonly setEconomy: (economy: boolean) => void;
   readonly loadStatus: "loading" | "ready" | "error";
   readonly setLoadStatus: (status: "loading" | "ready" | "error") => void;
   readonly paused: boolean;
@@ -27,6 +31,10 @@ interface RaceState {
 }
 
 export const useRace = create<RaceState>()((set) => ({
+  quality: "auto",
+  setQuality: (quality) => set({ quality }),
+  economy: false,
+  setEconomy: (economy) => set({ economy }),
   loadStatus: "loading",
   setLoadStatus: (loadStatus) => set({ loadStatus }),
   paused: false,
