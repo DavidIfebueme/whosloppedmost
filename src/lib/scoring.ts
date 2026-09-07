@@ -1,5 +1,7 @@
 export const WORLD_SCALE = 100;
-export const SPIRAL_LENGTH = 1000;
+import { CIRCUIT_LENGTH } from "./spiral";
+
+export const CIRCUIT_LAP_LENGTH = CIRCUIT_LENGTH;
 
 export function scoreToDistance(mergedPrs: number): number {
   if (mergedPrs <= 0) {
@@ -12,5 +14,5 @@ export function distanceToLaps(distance: number): number {
   if (distance < 0) {
     return 0;
   }
-  return Math.floor(distance / SPIRAL_LENGTH);
+  return Math.floor(distance / CIRCUIT_LAP_LENGTH);
 }

@@ -27,10 +27,10 @@ describe("scoreToDistance", () => {
 });
 
 describe("distanceToLaps", () => {
-  it("counts full spiral loops", () => {
+  it("counts complete circuit laps", () => {
     expect(distanceToLaps(0)).toBe(0);
-    expect(distanceToLaps(999)).toBe(0);
-    expect(distanceToLaps(1000)).toBe(1);
+    expect(distanceToLaps(1199)).toBe(0);
+    expect(distanceToLaps(1200)).toBe(1);
     expect(distanceToLaps(2500)).toBe(2);
   });
 });
