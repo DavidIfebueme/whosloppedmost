@@ -10,6 +10,7 @@ const report = { base, browser: browser.version(), data: 'deterministic intercep
 async function check(name, run) {
   try { await run(); report.checks.push({ name, passed: true }); }
   catch (error) { report.checks.push({ name, passed: false, error: error.message }); }
+  await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report.checks.at(-1)));
 }
 async function noOverflow(page) {
@@ -20,7 +21,7 @@ try {
   for (const width of [1440, 390, 320, 844]) {
     const page = await browser.newPage({ viewport: { width, height: width === 1440 ? 1000 : width === 844 ? 375 : 844 }, reducedMotion: 'reduce' });
     page.on('pageerror', error => report.errors.push({ width, type: 'pageerror', message: error.message }));
-    page.on('console', message => { if (message.type() === 'error') report.errors.push({ width, type: 'console', message: message.text() }); });
+    page.on('console', message => { if (message.type() === 'error') report.errors.push({ width, type: 'console', message: message.text(), location: message.location() }); });
     await installFixture(page, 15);
     await check(`home ${width}`, async () => {
       await page.goto(base, { waitUntil: 'domcontentloaded' });

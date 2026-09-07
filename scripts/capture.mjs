@@ -7,7 +7,7 @@ const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
-page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+page.on('console', m => { if (m.type() === 'error') errors.push({ message: m.text(), location: m.location() }); });
 await page.goto(base + '/race', { waitUntil: 'domcontentloaded', timeout: 90000 });
 await pauseRace(page);
 await page.screenshot({ path: '/tmp/whoslopped-review/race-desktop.png', timeout: 90000 });
