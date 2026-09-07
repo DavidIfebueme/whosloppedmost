@@ -58,8 +58,8 @@ try {
           await installFixture(page, count);
           await page.goto(`${base}/race?metrics=1`, { waitUntil: 'domcontentloaded' });
           await page.locator('.pause-control').waitFor({ timeout: 90000 });
-          await page.waitForTimeout(3000);
           if (await page.locator('.pause-control').getAttribute('aria-pressed') === 'true') await page.locator('.pause-control').click();
+          await page.waitForTimeout(8000);
           report.performance.push({ width, runners: count, ...await measureFrames(page) });
           await pauseRace(page);
         });
