@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { pointAt, REBASE_THRESHOLD, spiralRadius } from "@/lib/spiral";
+import { CIRCUIT_LENGTH, pointAt, REBASE_THRESHOLD, spiralRadius } from "@/lib/spiral";
 import RatSwarm, { liveSpots } from "@/components/RatSwarm";
 import RaceHud from "@/components/RaceHud";
 import { isRatDatum, loadCustomRats } from "@/components/RegisterPanel";
@@ -478,15 +478,7 @@ export default function RaceScene() {
     };
   }, [setRats]);
 
-  const maxDistance = useMemo(() => {
-    let max = 0;
-    for (const rat of rats) {
-      if (rat.distance > max) {
-        max = rat.distance;
-      }
-    }
-    return Math.max(max * 1.15, 1200);
-  }, [rats]);
+  const maxDistance = CIRCUIT_LENGTH;
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-void">

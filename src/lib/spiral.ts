@@ -1,5 +1,7 @@
 export const INNER_RADIUS = 20;
 export const SPIRAL_GROWTH = 2.5;
+/** A closed course means runners never teleport from a visible finish back to a start. */
+export const CIRCUIT_LENGTH = 1200;
 export const REBASE_THRESHOLD = 5000;
 export const REBASE_STEP = 1000;
 
@@ -17,12 +19,15 @@ function thetaFor(distance: number): number {
 }
 
 export function spiralRadius(distance: number): number {
-  return INNER_RADIUS + SPIRAL_GROWTH * thetaFor(distance);
+  void distance;
+  return 108;
 }
 
 export function pointAt(distance: number): TrackPoint {
-  const theta = thetaFor(distance);
-  const r = INNER_RADIUS + SPIRAL_GROWTH * theta;
+  const theta = ((distance % CIRCUIT_LENGTH) + CIRCUIT_LENGTH) % CIRCUIT_LENGTH / CIRCUIT_LENGTH * Math.PI * 2;
+  // An asymmetric, gently undulating closed circuit. The shared path function
+  // drives both track mesh and runners, so there is no visible reset point.
+  const r = 77 + Math.sin(theta * 3 - 0.4) * 12 + Math.sin(theta * 5 + 1.2) * 5;
   return {
     x: r * Math.cos(theta),
     y: 0,
