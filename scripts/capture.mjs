@@ -1,4 +1,4 @@
-import { launchBrowser } from './browser-utils.mjs';
+import { launchBrowser, pauseRace } from './browser-utils.mjs';
 import { mkdir } from 'node:fs/promises';
 
 const base = process.env.CAPTURE_URL || 'http://127.0.0.1:3000';
@@ -8,10 +8,8 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, re
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-await page.goto(base + '/race', { waitUntil: 'networkidle', timeout: 180000 });
-await page.waitForTimeout(6000);
-await page.locator('.pause-control').click();
-await page.waitForTimeout(1000);
+await page.goto(base + '/race', { waitUntil: 'domcontentloaded', timeout: 90000 });
+await pauseRace(page);
 await page.screenshot({ path: '/tmp/whoslopped-review/race-desktop.png', timeout: 90000 });
 console.log('Saved /tmp/whoslopped-review/race-desktop.png');
 if (process.argv.includes('--write-artwork')) {
@@ -27,8 +25,7 @@ for (const width of [390, 320]) {
   await page.screenshot({ path: `/tmp/whoslopped-review/home-${width}.png`, fullPage: true });
   await page.goto(base + '/race', { waitUntil: 'networkidle', timeout: 180000 });
   await page.waitForTimeout(2000);
-  await page.locator('.pause-control').click();
-  await page.waitForTimeout(1000);
+  await pauseRace(page);
   await page.screenshot({ path: `/tmp/whoslopped-review/race-${width}.png` });
 }
 console.log(JSON.stringify({ base, errors }, null, 2));
