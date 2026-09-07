@@ -50,30 +50,30 @@ export const liveSpots: Array<LiveSpot> = [];
 function buildFallbackGeometry(): THREE.BufferGeometry {
   // This is deliberately one merged, instanced mesh: the economy path can retain
   // a recognisable silhouette without multiplying draw calls for every runner.
-  const body = new THREE.CapsuleGeometry(0.88, 2.25, 6, 12);
+  const body = new THREE.CapsuleGeometry(0.88, 2.25, 4, 8);
   body.rotateX(Math.PI / 2);
   body.translate(0, 1.2, 0);
-  const shoulders = new THREE.SphereGeometry(0.78, 10, 7);
+  const shoulders = new THREE.SphereGeometry(0.78, 7, 5);
   shoulders.scale(0.92, 0.84, 1.12);
   shoulders.translate(0, 1.45, 1.48);
-  const head = new THREE.ConeGeometry(0.7, 1.35, 8);
+  const head = new THREE.ConeGeometry(0.7, 1.35, 6);
   head.rotateX(Math.PI / 2);
   head.translate(0, 1.5, 2.2);
-  const snout = new THREE.SphereGeometry(0.28, 8, 6);
+  const snout = new THREE.SphereGeometry(0.28, 6, 4);
   snout.scale(0.9, 0.7, 1.28);
   snout.translate(0, 1.35, 3.0);
-  const earL = new THREE.SphereGeometry(0.34, 8, 6);
+  const earL = new THREE.SphereGeometry(0.34, 6, 4);
   earL.scale(0.55, 0.24, 1);
   earL.rotateY(-0.25);
   earL.translate(-0.47, 2.23, 1.94);
-  const earR = new THREE.SphereGeometry(0.34, 8, 6);
+  const earR = new THREE.SphereGeometry(0.34, 6, 4);
   earR.scale(0.55, 0.24, 1);
   earR.rotateY(0.25);
   earR.translate(0.47, 2.23, 1.94);
   const parts: THREE.BufferGeometry[] = [body, shoulders, head, snout, earL, earR];
   for (const x of [-0.58, 0.58]) {
     for (const z of [-0.85, 1.08]) {
-      const paw = new THREE.CapsuleGeometry(0.18, 0.45, 4, 6);
+      const paw = new THREE.CapsuleGeometry(0.18, 0.45, 3, 5);
       paw.rotateX(Math.PI / 2);
       paw.rotateZ(x * 0.18);
       paw.translate(x, 0.45, z);
@@ -87,9 +87,9 @@ function buildFallbackGeometry(): THREE.BufferGeometry {
         new THREE.Vector3(x * 3, 1.05, -3.15),
         new THREE.Vector3(x * 5, 0.65, -3.85),
       ]),
-      8,
-      0.1,
       5,
+      0.1,
+      4,
       false,
     );
     parts.push(tail);
