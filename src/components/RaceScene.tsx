@@ -26,15 +26,14 @@ interface RatDatum {
   readonly stale: boolean;
 }
 
-const LANE_COUNT = 16;
 const LANE_WIDTH = 2.4;
-const TRACK_HALF_WIDTH = LANE_COUNT * LANE_WIDTH / 2;
+const TRACK_MIN_LANES = 16;
 
-function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
+function TrackRibbon({ maxDistance, laneCount }: { readonly maxDistance: number; readonly laneCount: number }) {
   const asphalt = useMemo(() => surfaceTexture("asphalt"), []);
   const geometry = useMemo(() => {
-    return circuitStrip(maxDistance, -TRACK_HALF_WIDTH, TRACK_HALF_WIDTH, 0.08);
-  }, [maxDistance]);
+    return circuitStrip(maxDistance, 0, laneCount * LANE_WIDTH, 0.08);
+  }, [maxDistance, laneCount]);
 
   useEffect(() => {
     return () => {
@@ -76,14 +75,14 @@ function curbTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-function Curbs({ maxDistance }: { readonly maxDistance: number }) {
+function Curbs({ maxDistance, laneCount }: { readonly maxDistance: number; readonly laneCount: number }) {
   const tex = useMemo(() => curbTexture(), []);
   const geos = useMemo(() => {
     return [
-      circuitStrip(maxDistance, -TRACK_HALF_WIDTH - 0.55, -TRACK_HALF_WIDTH, 0.1),
-      circuitStrip(maxDistance, TRACK_HALF_WIDTH, TRACK_HALF_WIDTH + 0.55, 0.1),
+      circuitStrip(maxDistance, -0.55, 0, 0.1),
+      circuitStrip(maxDistance, laneCount * LANE_WIDTH, laneCount * LANE_WIDTH + 0.55, 0.1),
     ];
-  }, [maxDistance]);
+  }, [maxDistance, laneCount]);
 
   useEffect(() => {
     return () => {
@@ -105,13 +104,13 @@ function Curbs({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
-function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
+function EdgeLines({ maxDistance, laneCount }: { readonly maxDistance: number; readonly laneCount: number }) {
   const geos = useMemo(() => {
     const mk = (off: number) => {
       return circuitStrip(maxDistance, off - 0.11, off + 0.11, 0.11);
     };
-    return [mk(TRACK_HALF_WIDTH - 0.4), mk(-TRACK_HALF_WIDTH + 0.4)];
-  }, [maxDistance]);
+    return [mk(0.4), mk(laneCount * LANE_WIDTH - 0.4)];
+  }, [maxDistance, laneCount]);
 
   useEffect(() => {
     return () => {
@@ -132,23 +131,23 @@ function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
-function LaneMarkers({ maxDistance }: { readonly maxDistance: number }) {
+function LaneMarkers({ maxDistance, laneCount }: { readonly maxDistance: number; readonly laneCount: number }) {
   const geometry = useMemo(() => {
-    const strips = Array.from({ length: LANE_COUNT - 1 }, (_, i) => {
-      const offset = -TRACK_HALF_WIDTH + (i + 1) * LANE_WIDTH;
+    const strips = Array.from({ length: laneCount - 1 }, (_, i) => {
+      const offset = (i + 1) * LANE_WIDTH;
       return circuitStrip(maxDistance, offset - 0.035, offset + 0.035, 0.115);
     });
     const merged = mergeGeometries(strips)!;
     strips.forEach((strip) => strip.dispose());
     return merged;
-  }, [maxDistance]);
+  }, [maxDistance, laneCount]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <mesh geometry={geometry}><meshStandardMaterial color="#d9d5c7" roughness={0.8} /></mesh>;
 }
 
 function GuideLight({ maxDistance }: { readonly maxDistance: number }) {
   const geometry = useMemo(() => {
-    return circuitStrip(maxDistance, -TRACK_HALF_WIDTH - 0.72, -TRACK_HALF_WIDTH - 0.65, 0.12);
+    return circuitStrip(maxDistance, -0.72, -0.65, 0.12);
   }, [maxDistance]);
 
   useEffect(() => {
@@ -164,7 +163,7 @@ function GuideLight({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
-function Barriers({ maxDistance }: { readonly maxDistance: number }) {
+function Barriers({ maxDistance, laneCount }: { readonly maxDistance: number; readonly laneCount: number }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const placements = useMemo(() => {
     const list: Array<{ x: number; z: number; yaw: number }> = [];
@@ -177,11 +176,11 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
       const nx = -dz / len;
       const nz = dx / len;
       const yaw = Math.atan2(dx, dz);
-      list.push({ x: p.x + nx * (TRACK_HALF_WIDTH + 1.7), z: p.z + nz * (TRACK_HALF_WIDTH + 1.7), yaw });
-      list.push({ x: p.x - nx * (TRACK_HALF_WIDTH + 1.7), z: p.z - nz * (TRACK_HALF_WIDTH + 1.7), yaw });
+      list.push({ x: p.x - nx * 1.7, z: p.z - nz * 1.7, yaw });
+      list.push({ x: p.x + nx * (laneCount * LANE_WIDTH + 1.7), z: p.z + nz * (laneCount * LANE_WIDTH + 1.7), yaw });
     }
     return list;
-  }, [maxDistance]);
+  }, [maxDistance, laneCount]);
 
   useEffect(() => {
     const m = mesh.current;
@@ -455,6 +454,7 @@ export default function RaceScene() {
   }, []);
   const world = useRef<THREE.Group>(null);
   const rats = useRace((s) => s.rats);
+  const laneCount = Math.max(TRACK_MIN_LANES, rats.filter((rat) => !rat.stale).length);
   const setRats = useRace((s) => s.setRats);
   const viewName = useRace((s) => s.viewName);
   const selected = useRace((s) => s.selected);
@@ -542,12 +542,12 @@ export default function RaceScene() {
         <group ref={world}>
           <Ground />
           <DuskArena maxDistance={maxDistance} />
-          <TrackRibbon maxDistance={maxDistance} />
-          <Curbs maxDistance={maxDistance} />
-          <EdgeLines maxDistance={maxDistance} />
-          <LaneMarkers maxDistance={maxDistance} />
+          <TrackRibbon maxDistance={maxDistance} laneCount={laneCount} />
+          <Curbs maxDistance={maxDistance} laneCount={laneCount} />
+          <EdgeLines maxDistance={maxDistance} laneCount={laneCount} />
+          <LaneMarkers maxDistance={maxDistance} laneCount={laneCount} />
           <GuideLight maxDistance={maxDistance} />
-          <Barriers maxDistance={maxDistance} />
+          <Barriers maxDistance={maxDistance} laneCount={laneCount} />
           <StoryProps maxDistance={maxDistance} />
           <Trackside maxDistance={maxDistance} />
           <RatSwarm loopLength={maxDistance} />
