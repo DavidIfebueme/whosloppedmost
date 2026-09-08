@@ -11,6 +11,8 @@ import { useRace, type RatDatum } from "@/store/race";
 
 const LOD_DISTANCE = 900;
 const SKINNED_LIMIT = 40;
+const LANE_COUNT = 16;
+const LANE_WIDTH = 2.4;
 // Join an already-running race rather than stack similar scores on the grid.
 let simulationTime = 240;
 
@@ -25,7 +27,11 @@ function runnerPose(rat: RatDatum, index: number, loopLength: number) {
   const point = pointAt(s);
   const ahead = pointAt(s + 0.5);
   const length = Math.hypot(ahead.x - point.x, ahead.z - point.z) || 1;
-  return { ...point, tx: (ahead.x - point.x) / length, tz: (ahead.z - point.z) / length };
+  const tx = (ahead.x - point.x) / length;
+  const tz = (ahead.z - point.z) / length;
+  // Stable lane assignment makes a field read as a race, not a single-file queue.
+  const lane = (index % LANE_COUNT - (LANE_COUNT - 1) / 2) * LANE_WIDTH;
+  return { x: point.x - tz * lane, y: point.y, z: point.z + tx * lane, tx, tz };
 }
 
 function SimulationClock() {

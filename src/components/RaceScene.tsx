@@ -26,10 +26,14 @@ interface RatDatum {
   readonly stale: boolean;
 }
 
+const LANE_COUNT = 16;
+const LANE_WIDTH = 2.4;
+const TRACK_HALF_WIDTH = LANE_COUNT * LANE_WIDTH / 2;
+
 function TrackRibbon({ maxDistance }: { readonly maxDistance: number }) {
   const asphalt = useMemo(() => surfaceTexture("asphalt"), []);
   const geometry = useMemo(() => {
-    return circuitStrip(maxDistance, -3.8, 3.8, 0.08);
+    return circuitStrip(maxDistance, -TRACK_HALF_WIDTH, TRACK_HALF_WIDTH, 0.08);
   }, [maxDistance]);
 
   useEffect(() => {
@@ -76,8 +80,8 @@ function Curbs({ maxDistance }: { readonly maxDistance: number }) {
   const tex = useMemo(() => curbTexture(), []);
   const geos = useMemo(() => {
     return [
-      circuitStrip(maxDistance, -4.25, -3.8, 0.1),
-      circuitStrip(maxDistance, 3.8, 4.25, 0.1),
+      circuitStrip(maxDistance, -TRACK_HALF_WIDTH - 0.55, -TRACK_HALF_WIDTH, 0.1),
+      circuitStrip(maxDistance, TRACK_HALF_WIDTH, TRACK_HALF_WIDTH + 0.55, 0.1),
     ];
   }, [maxDistance]);
 
@@ -106,7 +110,7 @@ function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
     const mk = (off: number) => {
       return circuitStrip(maxDistance, off - 0.11, off + 0.11, 0.11);
     };
-    return [mk(3.4), mk(-3.4)];
+    return [mk(TRACK_HALF_WIDTH - 0.4), mk(-TRACK_HALF_WIDTH + 0.4)];
   }, [maxDistance]);
 
   useEffect(() => {
@@ -128,9 +132,23 @@ function EdgeLines({ maxDistance }: { readonly maxDistance: number }) {
   );
 }
 
+function LaneMarkers({ maxDistance }: { readonly maxDistance: number }) {
+  const geometry = useMemo(() => {
+    const strips = Array.from({ length: LANE_COUNT - 1 }, (_, i) => {
+      const offset = -TRACK_HALF_WIDTH + (i + 1) * LANE_WIDTH;
+      return circuitStrip(maxDistance, offset - 0.035, offset + 0.035, 0.115);
+    });
+    const merged = mergeGeometries(strips)!;
+    strips.forEach((strip) => strip.dispose());
+    return merged;
+  }, [maxDistance]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <mesh geometry={geometry}><meshStandardMaterial color="#d9d5c7" roughness={0.8} /></mesh>;
+}
+
 function GuideLight({ maxDistance }: { readonly maxDistance: number }) {
   const geometry = useMemo(() => {
-    return circuitStrip(maxDistance, -4.38, -4.31, 0.12);
+    return circuitStrip(maxDistance, -TRACK_HALF_WIDTH - 0.72, -TRACK_HALF_WIDTH - 0.65, 0.12);
   }, [maxDistance]);
 
   useEffect(() => {
@@ -159,8 +177,8 @@ function Barriers({ maxDistance }: { readonly maxDistance: number }) {
       const nx = -dz / len;
       const nz = dx / len;
       const yaw = Math.atan2(dx, dz);
-      list.push({ x: p.x + nx * 5.5, z: p.z + nz * 5.5, yaw });
-      list.push({ x: p.x - nx * 5.5, z: p.z - nz * 5.5, yaw });
+      list.push({ x: p.x + nx * (TRACK_HALF_WIDTH + 1.7), z: p.z + nz * (TRACK_HALF_WIDTH + 1.7), yaw });
+      list.push({ x: p.x - nx * (TRACK_HALF_WIDTH + 1.7), z: p.z - nz * (TRACK_HALF_WIDTH + 1.7), yaw });
     }
     return list;
   }, [maxDistance]);
@@ -527,6 +545,7 @@ export default function RaceScene() {
           <TrackRibbon maxDistance={maxDistance} />
           <Curbs maxDistance={maxDistance} />
           <EdgeLines maxDistance={maxDistance} />
+          <LaneMarkers maxDistance={maxDistance} />
           <GuideLight maxDistance={maxDistance} />
           <Barriers maxDistance={maxDistance} />
           <StoryProps maxDistance={maxDistance} />
